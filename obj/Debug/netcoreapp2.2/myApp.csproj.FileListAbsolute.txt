@@ -1,0 +1,11 @@
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\bin\Debug\netcoreapp2.2\myApp.deps.json
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\bin\Debug\netcoreapp2.2\myApp.runtimeconfig.json
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\bin\Debug\netcoreapp2.2\myApp.runtimeconfig.dev.json
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\bin\Debug\netcoreapp2.2\myApp.dll
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\bin\Debug\netcoreapp2.2\myApp.pdb
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\obj\Debug\netcoreapp2.2\myApp.csprojAssemblyReference.cache
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\obj\Debug\netcoreapp2.2\myApp.csproj.CoreCompileInputs.cache
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\obj\Debug\netcoreapp2.2\myApp.AssemblyInfoInputs.cache
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\obj\Debug\netcoreapp2.2\myApp.AssemblyInfo.cs
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\obj\Debug\netcoreapp2.2\myApp.dll
+C:\Users\rtfa\Documents\WritingAParserBlog\myApp\obj\Debug\netcoreapp2.2\myApp.pdb

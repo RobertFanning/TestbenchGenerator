@@ -1,0 +1,58 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\myApp.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\myApp.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\myApp.csproj",
+        "projectName": "myApp",
+        "projectPath": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\myApp.csproj",
+        "packagesPath": "C:\\Users\\rtfa\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\rtfa\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "netcoreapp2.2"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "netcoreapp2.2": {
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netcoreapp2.2": {
+          "dependencies": {
+            "Microsoft.NETCore.App": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.2.0, )",
+              "autoReferenced": true
+            }
+          },
+          "imports": [
+            "net461"
+          ],
+          "assetTargetFallback": true,
+          "warn": true
+        }
+      }
+    }
+  }
+}
