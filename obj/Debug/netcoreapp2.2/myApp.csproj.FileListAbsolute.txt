@@ -1,3 +1,14 @@
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\bin\Debug\netcoreapp2.2\VHDLparser.deps.json
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\bin\Debug\netcoreapp2.2\VHDLparser.runtimeconfig.json
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\bin\Debug\netcoreapp2.2\VHDLparser.runtimeconfig.dev.json
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\bin\Debug\netcoreapp2.2\VHDLparser.dll
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\bin\Debug\netcoreapp2.2\VHDLparser.pdb
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\obj\Debug\netcoreapp2.2\VHDLparser.csprojAssemblyReference.cache
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\obj\Debug\netcoreapp2.2\VHDLparser.csproj.CoreCompileInputs.cache
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\obj\Debug\netcoreapp2.2\VHDLparser.AssemblyInfoInputs.cache
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\obj\Debug\netcoreapp2.2\VHDLparser.AssemblyInfo.cs
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\obj\Debug\netcoreapp2.2\VHDLparser.dll
+C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\obj\Debug\netcoreapp2.2\VHDLparser.pdb
 C:\Users\rtfa\Documents\WritingAParserBlog\myApp\bin\Debug\netcoreapp2.2\myApp.deps.json
 C:\Users\rtfa\Documents\WritingAParserBlog\myApp\bin\Debug\netcoreapp2.2\myApp.runtimeconfig.json
 C:\Users\rtfa\Documents\WritingAParserBlog\myApp\bin\Debug\netcoreapp2.2\myApp.runtimeconfig.dev.json

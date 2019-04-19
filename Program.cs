@@ -1,29 +1,40 @@
 ﻿using System;
 using System.IO;
-using myApp.ParserNodes;
+using VHDLparser.ParserNodes;
 
-namespace myApp
+namespace VHDLparser
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            
             Console.WriteLine("The current time is " + DateTime.Now);
-            string text = File.ReadAllText(@"C:\Users\rtfa\Documents\WritingAParserBlog\myApp\typicalPortmap.vhd");
+            string text = File.ReadAllText(@"C:\Users\rtfa\Documents\WritingAParserBlog\intea_p.vhd");
 
             StringReader lSource = new StringReader(text);
 	
-			Tokenizer lTokenizer = new Tokenizer(lSource);
+			
+            //PARSER
+            Parser lParser = new Parser(lSource);
+			Clause lClause = lParser.ReadNextClause();
+			while (lClause != null)
+			{
+				//Console.WriteLine("The type of token is: " + lToken.Type + ", and it's value is: " + lToken.Value);
+   				lClause = lParser.ReadNextClause();
+                Console.WriteLine(lClause);
+			}
 
-			Token lToken = lTokenizer.ReadNextToken();
-            //Console.WriteLine(lToken.Value);
-			while (lToken != null)
-				{
-					//ListBoxTokens.Items.Add(lToken.Type.ToString() + ":\t" + lToken.Value);
-                    Console.WriteLine("The type of token is: " + lToken.Type + ", and it's value is: " + lToken.Value);
-                    lToken = lTokenizer.ReadNextToken();
-				}
+            Console.WriteLine("GAME OVER");
+            //TOKENIZER 
+            //Tokenizer lTokenizer = new Tokenizer(lSource);
+			//Token lToken = lTokenizer.ReadNextToken();
+			//while (lToken != null)
+			//	{
+			//		//ListBoxTokens.Items.Add(lToken.Type.ToString() + ":\t" + lToken.Value);
+            //        Console.WriteLine("The type of token is: " + lToken.Type + ", and it's value is: " + lToken.Value);
+            //        lToken = lTokenizer.ReadNextToken();
+			//	}
 			
 		}
 			

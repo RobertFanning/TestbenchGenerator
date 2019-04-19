@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 
-namespace myApp
+namespace VHDLparser
 {
 	/// <summary>Converts a sequence of characters to a sequence of tokens.</summary>
 	public class Tokenizer
@@ -124,16 +124,17 @@ namespace myApp
 		}
 
 		//This will be triggered from read symbol and will only complete at the termination of a line.
-		Token ReadComment()
+		void ReadComment()
 		{
 			//do while: word can be composed of letters or digits or underscores
+			//Want to discard comments so no values are stored.
 			do
 			{
-				StoreCurrentCharAndReadNext();
+				ReadNextChar();
 			}
 			while (!fCurrentChar.Equals('\n'));
-
-			return new Token(TokenType.Comment, ExtractStoredChars());
+			//Clears the buffer after any comment is parsed.
+			fTokenValueBuffer.Length = 0;
 		}
 
 		Token ReadIntegerConstant()
@@ -166,22 +167,36 @@ namespace myApp
 			switch (fCurrentChar)
 			{
 				// the symbols + - * / ( ) ,
-				//case '+': 
-				//case '-':
-				//case '*':
-				//case '/':
-				//case ',':
+				case '+': 
 				case '(':
 				case ')':
 				case ';':
 				case '.':
+				case ',':
+				case '\'':
 					StoreCurrentCharAndReadNext();
 					return new Token(TokenType.Symbol, ExtractStoredChars());
 				// the symbols := ==
 				case ':':
-				//case '=':
 					StoreCurrentCharAndReadNext();
 					if (fCurrentChar == '=')
+					{
+						StoreCurrentCharAndReadNext();
+					}
+					return new Token(TokenType.Symbol, ExtractStoredChars());
+
+				//** is needed for exponential numbers.
+				case '*':
+					StoreCurrentCharAndReadNext();
+					if (fCurrentChar == '*')
+					{
+						StoreCurrentCharAndReadNext();
+					}
+					return new Token(TokenType.Symbol, ExtractStoredChars());
+
+				case '=':
+					StoreCurrentCharAndReadNext();
+					if (fCurrentChar == '=' || fCurrentChar == '>')
 					{
 						StoreCurrentCharAndReadNext();
 					}
@@ -193,7 +208,8 @@ namespace myApp
 					if (fCurrentChar == '-')
 					{
 						StoreCurrentCharAndReadNext();
-						return ReadComment();
+						ReadComment();
+						return ReadNextToken();
 					}
 					return new Token(TokenType.Symbol, ExtractStoredChars());
 			

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace myApp.ParserNodes
+namespace VHDLparser.ParserNodes
 {
 	/// <summary>Represents an expression with 2 child expressions.</summary>
 	public abstract class BinaryExpression : Expression

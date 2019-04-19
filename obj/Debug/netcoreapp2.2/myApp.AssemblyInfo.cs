@@ -7,10 +7,10 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("myApp")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("VHDLparser")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
-[assembly: System.Reflection.AssemblyProductAttribute("myApp")]
-[assembly: System.Reflection.AssemblyTitleAttribute("myApp")]
+[assembly: System.Reflection.AssemblyProductAttribute("VHDLparser")]
+[assembly: System.Reflection.AssemblyTitleAttribute("VHDLparser")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

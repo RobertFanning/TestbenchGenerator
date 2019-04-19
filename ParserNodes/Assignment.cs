@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace myApp.ParserNodes
+namespace VHDLparser.ParserNodes
 {
 	/// <summary>Represents an assignment of a value to a variable.</summary>
-	public class Assignment : Statement
+	public class Assignment : Clause
 	{
 		/// <summary>Initializes a new instance of the <see cref="Assignment"/> class.</summary>
 		/// <param name="variable">The variable to assign to.</param>

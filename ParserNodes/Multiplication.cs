@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace myApp.ParserNodes
+namespace VHDLparser.ParserNodes
 {
 	/// <summary>Represents a multiplication.</summary>
 	public class Multiplication : BinaryExpression

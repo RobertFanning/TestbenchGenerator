@@ -4,8 +4,8 @@ using System.Text;
 
 namespace VHDLparser.ParserNodes
 {
-	/// <summary>The base class of all the other parser node classes.</summary>
-	public abstract class ParserNode
+	/// <summary>Represents any Clause.</summary>
+	public abstract class Clause : ParserNode
 	{
 	}
 }

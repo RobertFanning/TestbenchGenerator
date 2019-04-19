@@ -2,16 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace myApp.ParserNodes
+namespace VHDLparser.ParserNodes
 {
-	/// <summary>Represents an if-statement.</summary>
-	public class IfStatement : Statement
+	/// <summary>Represents an if-Clause.</summary>
+	public class IfClause : Clause
 	{
-		/// <summary>Initializes a new instance of the <see cref="IfStatement"/> class.</summary>
-		/// <param name="condition">The condition of this if-statement.</param>
+		/// <summary>Initializes a new instance of the <see cref="IfClause"/> class.</summary>
+		/// <param name="condition">The condition of this if-Clause.</param>
 		/// <param name="trueBlock">The block that is executed when the condition evaluates to true.</param>
 		/// <param name="falseBlock">The block that is executed when the condition evaluates to false.</param>
-		public IfStatement(Expression condition, StatementCollection trueBlock, StatementCollection falseBlock)
+		public IfClause(Expression condition, ClauseCollection trueBlock, ClauseCollection falseBlock)
 		{
 			if (condition == null) throw new ArgumentNullException("condition");
 			if (trueBlock == null) throw new ArgumentNullException("trueBlock");
@@ -23,18 +23,18 @@ namespace myApp.ParserNodes
 		}
 
 		readonly Expression fCondition;
-		/// <summary>Gets the condition of this if-statement.</summary>
-		/// <value>The condition of this if-statement.</value>
+		/// <summary>Gets the condition of this if-Clause.</summary>
+		/// <value>The condition of this if-Clause.</value>
 		public Expression Condition { get { return fCondition; } }
 
-		readonly StatementCollection fTrueBlock;
+		readonly ClauseCollection fTrueBlock;
 		/// <summary>Gets the block that is executed when the condition evaluates to true.</summary>
 		/// <value>The block that is executed when the condition evaluates to true.</value>
-		public StatementCollection TrueBlock { get { return fTrueBlock; } }
+		public ClauseCollection TrueBlock { get { return fTrueBlock; } }
 
-		readonly StatementCollection fFalseBlock;
+		readonly ClauseCollection fFalseBlock;
 		/// <summary>Gets the block that is executed when the condition evaluates to false.</summary>
 		/// <value>The block that is executed when the condition evaluates to false.</value>
-		public StatementCollection FalseBlock { get { return fFalseBlock; } }
+		public ClauseCollection FalseBlock { get { return fFalseBlock; } }
 	}
 }

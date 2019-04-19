@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace myApp
+namespace VHDLparser
 {
 	/// <summary>Represents a token, generated from a sequence of characters.</summary>
 	public class Token

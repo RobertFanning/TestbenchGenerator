@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.Serialization;
 
-namespace myApp
+namespace VHDLparser
 {
 	/// <summary>Represents an error that occurred while parsing ADL code.</summary>
 	[Serializable]
