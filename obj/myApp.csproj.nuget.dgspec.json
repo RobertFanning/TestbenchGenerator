@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\myApp.csproj": {}
+    "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\myApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\myApp.csproj": {
+    "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\myApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\myApp.csproj",
+        "projectUniqueName": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\myApp.csproj",
         "projectName": "myApp",
-        "projectPath": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\myApp.csproj",
+        "projectPath": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\myApp.csproj",
         "packagesPath": "C:\\Users\\rtfa\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\myApp\\obj\\",
+        "outputPath": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"

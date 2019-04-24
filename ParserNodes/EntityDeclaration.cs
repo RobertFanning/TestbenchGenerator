@@ -5,9 +5,9 @@ using System.Text;
 namespace VHDLparser.ParserNodes
 {
 	/// <summary>Represents a for-loop.</summary>
-	public class EntityDeclaration : Clause
+	public class EntityDeclaration : Declaration
 	{
-		public EntityDeclaration(Variable moduleName, ClauseCollection block)
+		public EntityDeclaration(Variable moduleName, ParserNodeCollection block)
 		{
 			if (moduleName == null) throw new ArgumentNullException("moduleName");
 			if (block == null) throw new ArgumentNullException("block");
@@ -21,9 +21,9 @@ namespace VHDLparser.ParserNodes
 		/// <value>The variable that is incremented each iteration.</value>
 		public Variable Variable { get { return fVariable; } }
 
-		readonly ClauseCollection fBlock;
+		readonly ParserNodeCollection fBlock;
 		/// <summary>Gets the block that is executed each iteration.</summary>
 		/// <value>The block that is executed each iteration.</value>
-		public ClauseCollection Block { get { return fBlock; } }
+		public ParserNodeCollection Block { get { return fBlock; } }
 	}
 }

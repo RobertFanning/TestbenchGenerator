@@ -15,12 +15,12 @@
 -------------------------------------------------------------------------------
 
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-use work.fixed_pkg.all;
-use work.fixed_util_p.all;
+--use ieee.std_logic_1164.all;
+--use ieee.numeric_std.all;
+--use work.fixed_pkg.all;
+--use work.fixed_util_p.all;
 use work.intea_p.all;
-use work.intea_wic_p.all;
+--use work.intea_wic_p.all;
 
 
 entity predict is

@@ -4,12 +4,10 @@ using System.Text;
 
 namespace VHDLparser
 {
-	/// <summary>Represents a token, generated from a sequence of characters.</summary>
+	//Represents a token, generated from a sequence of characters.
 	public class Token
 	{
-		/// <summary>Initializes a new instance of the <see cref="Token"/> class.</summary>
-		/// <param name="type">The type of the token.</param>
-		/// <param name="value">The value of the token.</param>
+		
 		public Token(TokenType type, string value)
 		{
 			if (value == null) throw new ArgumentNullException("value");
@@ -19,19 +17,23 @@ namespace VHDLparser
 		}
 
 		readonly TokenType fType;
-		/// <summary>Gets the type of this token.</summary>
-		/// <value>The type of this token.</value>
 		public TokenType Type { get { return fType; } }
 
 		readonly string fValue;
-		/// <summary>Gets the value of this token.</summary>
-		/// <value>The value of this token.</value>
+		
 		public string Value { get { return fValue; } }
 
-		/// <summary>Determines whether this token has the specified type and value.</summary>
-		/// <param name="type">The type to check against.</param>
-		/// <param name="value">The value to check against.</param>
-		/// <returns>If this token has the specified type and value, <c>true</c>; otherwise, <c>false</c>.</returns>
+		public int IntValue() 
+		{ 
+			int x = 0;
+
+			if(Int32.TryParse(fValue, out x))
+				return x;
+			else
+				throw new ParserException("String not converted to int");
+
+		}
+
 		public bool Equals(TokenType type, string value)
 		{
 			return fType == type && fValue == value;

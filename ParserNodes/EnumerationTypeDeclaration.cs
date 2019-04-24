@@ -5,7 +5,7 @@ using System.Text;
 namespace VHDLparser.ParserNodes
 {
 	
-	public class EnumerationTypeDeclaration : Clause
+	public class EnumerationTypeDeclaration : Declaration
 	{
 		public EnumerationTypeDeclaration(string identifier, List<string> enumerationList)
 		{

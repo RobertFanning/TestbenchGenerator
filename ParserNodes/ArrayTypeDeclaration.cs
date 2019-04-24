@@ -10,7 +10,7 @@ namespace VHDLparser.ParserNodes
 	//type type_name is array (range) of element_type;
 	//type NIBBLE is array (3 downto 0) of std_ulogic;
 	//type RAM is array (0 to 31) of integer range 0 to 255;
-	public class ArrayTypeDeclaration : Clause
+	public class ArrayTypeDeclaration : Declaration
 	{
 		public ArrayTypeDeclaration(string identifier, string from, string to, string subtype_indication)
 		{

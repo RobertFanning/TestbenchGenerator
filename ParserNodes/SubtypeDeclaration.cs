@@ -5,7 +5,7 @@ using System.Text;
 namespace VHDLparser.ParserNodes
 {
 	
-	public class SubtypeDeclaration : Clause
+	public class SubtypeDeclaration : Declaration
 	{
 		public SubtypeDeclaration(string identifier, string subtype_indication)
 		{

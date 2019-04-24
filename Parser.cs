@@ -14,6 +14,17 @@ namespace VHDLparser
 
 		bool parseComplete;
 
+		//Lists for storing Parameters extracted from package
+		List<ConstantDeclaration>         ConstantList;
+
+		List<SubtypeDeclaration>          SubtypeList;
+
+		List<ArrayTypeDeclaration>        ArrayTypeList;
+
+		List<EnumerationTypeDeclaration>  EnumerationTypeList;
+
+		List<RecordTypeDeclaration>       RecordTypeList;
+
 		//Initializes a new instance of the "Parser" class.
 		//The source "TextReader" to read the tokens from.
 		public Parser(TextReader source)
@@ -23,6 +34,16 @@ namespace VHDLparser
 			fTokenizer = new Tokenizer(source);
 
 			parseComplete = false;
+
+			ConstantList = new List<ConstantDeclaration>();
+
+			SubtypeList = new List<SubtypeDeclaration>();
+
+			ArrayTypeList = new List<ArrayTypeDeclaration>();
+
+			EnumerationTypeList = new List<EnumerationTypeDeclaration>();
+
+			RecordTypeList = new List<RecordTypeDeclaration>();
 
 			// read the first token
 			ReadNextToken();
@@ -69,7 +90,8 @@ namespace VHDLparser
 		//Reads the next Clause.
 		//The next Clause, or null if the end of the source has been reached.
 		//"ParserException" the source code is invalid.
-		public Clause ReadNextClause()
+
+		public ParserNode ParseNextNode()
 		{
 			
 			if (AtEndOfSource || parseComplete)
@@ -112,6 +134,8 @@ namespace VHDLparser
 			return null;
 		}
 
+
+		//use_clause ::= use selected_name { , selected_name } ;
 		UseClause ParseUseClause()
 		{
 			// Use-Clause:
@@ -136,6 +160,7 @@ namespace VHDLparser
 			return new UseClause(lLibrary, lPackage);
 		}
 
+		//library_clause ::= library logical_name_list ;
 		LibraryClause ParseLibraryClause()
 		{
 			// Use-Clause:
@@ -150,6 +175,208 @@ namespace VHDLparser
 			
 			return new LibraryClause(lLibrary);
 		}
+
+        //----------------------------------24-04-2019-------------------------------------------
+		//Parse Expression:
+		//expressions 
+		//Integer: if the first value is a number followed by ; we have an int
+
+		//Constant: if the first value is a word followed by ; 
+
+		//Function: first value is word followed by ( 
+
+		//Array: first value is ( followed by strings separated by ,
+
+		//Otheres: ( others =>
+
+		Node ParseExpression()
+		{
+		   // For the moment, all we understand is add and subtract
+            var expr = ParseAddSubtract();
+
+			Console.WriteLine(fCurrentToken.Value);
+            // Check if the entire expression until the end of line has been parsed
+            if (!fCurrentToken.Equals(TokenType.Symbol, ";"))
+                throw new ParserException("Expected ; and end of line");
+
+            return expr;	
+
+		
+		}
+
+
+				// Parse an sequence of add/subtract operators
+		Node ParseAddSubtract()
+		{
+			// Parse the left hand side
+			var lhs = ParseMultiplyDivide();
+
+			while (true)
+			{
+				// Work out the operator
+				Func<int, int, int> op = null;
+				if (fCurrentToken.Equals(TokenType.Symbol, "+"))
+				{
+					op = (a, b) => a + b;
+				}
+				else if (fCurrentToken.Equals(TokenType.Symbol, "-"))
+				{
+					op = (a, b) => a - b;
+				}
+
+				// Binary operator found?
+				if (op == null)
+					return lhs;             // no
+		
+				// Skip the operator
+				ReadNextToken();
+
+				// Parse the right hand side of the expression
+				var rhs = ParseMultiplyDivide();
+
+				// Create a binary node and use it as the left-hand side from now on
+				lhs = new NodeBinary(lhs, rhs, op);
+			}
+		}
+
+
+        // Parse an sequence of add/subtract operators
+        Node ParseMultiplyDivide()
+        {
+            // Parse the left hand side
+            var lhs = ParseExponent();
+
+            while (true)
+            {
+                // Work out the operator
+                Func<int, int, int> op = null;
+                if (fCurrentToken.Equals(TokenType.Symbol, "*"))
+                {
+                    op = (a, b) => a * b;
+                }
+                else if (fCurrentToken.Equals(TokenType.Symbol, "/"))
+                {
+                    op = (a, b) => a / b;
+                }
+
+                // Binary operator found?
+                if (op == null)
+                    return lhs;             // no
+
+                // Skip the operator
+                ReadNextToken();
+
+                // Parse the right hand side of the expression
+                var rhs = ParseExponent();
+
+                // Create a binary node and use it as the left-hand side from now on
+                lhs = new NodeBinary(lhs, rhs, op);
+            }
+        }
+
+		Node ParseExponent()
+        {
+            // Parse the left hand side
+            var lhs = ParseUnary();
+
+            while (true)
+            {
+                // Work out the operator
+                Func<int, int, int> op = null;
+                if (fCurrentToken.Equals(TokenType.Symbol, "**"))
+                {
+                    op = (a, b) => (int) Math.Pow(a, b);
+                }
+
+                // Binary operator found?
+                if (op == null)
+                    return lhs;             // no
+
+                // Skip the operator
+                ReadNextToken();
+
+                // Parse the right hand side of the expression
+                var rhs = ParseUnary();
+
+                // Create a binary node and use it as the left-hand side from now on
+                lhs = new NodeBinary(lhs, rhs, op);
+            }
+        }
+
+		Node ParseUnary()
+		{
+			// Positive operator is a no-op so just skip it
+			if (fCurrentToken.Equals(TokenType.Symbol, "+"))
+			{
+				// Skip
+				ReadNextToken();
+				return ParseUnary();
+			}
+
+			// Negative operator
+			if (fCurrentToken.Equals(TokenType.Symbol, "-"))
+			{
+				// Skip
+				ReadNextToken();
+
+				// Parse RHS 
+				// Note this recurses to self to support negative of a negative
+				var rhs = ParseUnary();
+
+				// Create unary node
+				return new NodeUnary(rhs, (a) => -a);
+			}
+
+			// No positive/negative operator so parse a leaf node
+			return ParseLeaf();
+		}
+
+
+		// Parse a leaf node
+		// (For the moment this is just a number)
+		Node ParseLeaf()
+		{
+			// Is it a number?
+			if (fCurrentToken.Type == TokenType.Integer)
+			{
+				var node = new NodeNumber(fCurrentToken.IntValue());
+				ReadNextToken();
+				return node;
+			}
+
+            // Parenthesis?
+            if (fCurrentToken.Equals(TokenType.Symbol, "("))
+            {
+                // Skip '('
+                ReadNextToken();
+
+                // Parse a top-level expression
+                var node = ParseAddSubtract();
+
+                // Check and skip ')'
+                if (!fCurrentToken.Equals(TokenType.Symbol, ")"))
+					throw new ParserException("Missing close parenthesis");
+                ReadNextToken();
+
+                // Return
+                return node;
+            }
+
+			if (fCurrentToken.Type == TokenType.Word)
+            {
+                // Parse a top-level expression
+				ConstantDeclaration result = ConstantList.Find(x => x.Identifier == fCurrentToken.Value);
+                var node = new NodeNumber(result.Value);
+				ReadNextToken();
+				return node;
+            }
+
+			// Don't Understand
+			throw new ParserException("Expected ; and end of line");
+		}
+	
+		//---------------------------------------------------------------------------------------
+
 
 		PackageDeclaration ParsePackageDeclaration()
 		{
@@ -167,25 +394,29 @@ namespace VHDLparser
 	
 
 			// PARSE GENERICS IF THERE ARE ANY
-			List<Clause> lClauses = new List<Clause>();
-			Clause lClause;
 			CheckForUnexpectedEndOfSource();
 			while (!fCurrentToken.Equals(TokenType.Word, "end"))
 			{
-				Console.WriteLine(fCurrentToken.Value);
-				if ((lClause = ReadNextClause()) != null)
-					lClauses.Add(lClause);
-				else throw new ParserException("Unexpected end of source.");	
+			
+				if (ParseNextNode() == null)
+					throw new ParserException("Unexpected end of source.");	
 				
 			}
-	
+			
 			ReadNextToken(); // skip 'end'
 			SkipExpected(TokenType.Word, packageName.Name); // skip end {moduleName}
 			SkipExpected(TokenType.Symbol, ";");
 
 			parseComplete = true; //Trigger end of parsing.
 
-			return new PackageDeclaration(packageName, new ClauseCollection(lClauses));
+			ConstantList.ForEach(Console.WriteLine);
+			
+			foreach(ConstantDeclaration constant in ConstantList)
+			{
+				Console.WriteLine(constant.Identifier);
+			}
+
+			return new PackageDeclaration(packageName);
 		}
 
 		ConstantDeclaration ParseConstantDeclaration()
@@ -200,24 +431,23 @@ namespace VHDLparser
 			string subtypeIndication = fCurrentToken.Value;
 			ReadNextToken();
 
-			if(fCurrentToken.Equals(TokenType.Symbol, ":="))
-			{
+			//if(fCurrentToken.Equals(TokenType.Symbol, ":="))
+			//{
 				ReadNextToken();
-				//SHOULD HAVE FUNCTION HERE THAT EXTRACTS INTEGER OR OTHERS DOWNTO 0
-
-			}	
-
-			//Read until end of line	-- MOVE THIS TO FUNCTION	
-			while (!fCurrentToken.Equals(TokenType.Symbol, ";")) 
-			{
+				Node result = ParseExpression();
+				Console.WriteLine(result.Eval());
+				ConstantDeclaration ParsedConstant = new ConstantDeclaration(identifier, subtypeIndication, result.Eval());
+				ConstantList.Add(ParsedConstant);
 				ReadNextToken();
-			}
-
-			ReadNextToken(); // skip ;
-			
-			Console.WriteLine("CONSTANT" + identifier);
-
-			return new ConstantDeclaration(identifier, subtypeIndication, "EXPRESSION CONTAINING VALUE SHOULD GO HERE");
+				return ParsedConstant;
+			//}	
+			//else // no value --CHECK THIS, IS THERE EVER AN INSTANCE WITH NO VALUE
+		//	{
+		//		SkipOver(TokenType.Symbol, ";");
+		//		ConstantDeclaration ParsedConstant = new ConstantDeclaration(identifier, subtypeIndication, 0);
+		//		ConstantList.Add(ParsedConstant);
+		//		return ParsedConstant;
+		//	}
 		}
 
 		SubtypeDeclaration ParseSubtypeDeclaration()
@@ -238,18 +468,20 @@ namespace VHDLparser
 
 			ReadNextToken(); // skip ;
 			
+			SubtypeDeclaration ParsedSubtype = new SubtypeDeclaration(identifier, subtypeIndication);
+			SubtypeList.Add(ParsedSubtype);
 
-			return new SubtypeDeclaration(identifier, subtypeIndication);
+			return ParsedSubtype;
 		}
 
-		Clause ParseTypeDeclaration()
+		Declaration ParseTypeDeclaration()
 		{
-			Console.WriteLine("CURRENT VALUE: " + fCurrentToken.Value);
+			
 			ReadNextToken(); //skip type
-			Console.WriteLine("CURRENT VALUE: " + fCurrentToken.Value);
+		
 			string identifier = fCurrentToken.Value;
 			SkipOver(TokenType.Word, "is");
-			Console.WriteLine("CURRENT VALUE: " + fCurrentToken.Value);
+	
 			if(fCurrentToken.Equals(TokenType.Word, "array"))
 			{
 				SkipOver(TokenType.Symbol, "(");
@@ -259,7 +491,9 @@ namespace VHDLparser
 				SkipOver(TokenType.Word, "of");
 				string subtypeIndication = fCurrentToken.Value;
 				SkipOver(TokenType.Symbol, ";");
-				return new ArrayTypeDeclaration(identifier, from, to, subtypeIndication); 
+				ArrayTypeDeclaration ParsedArrayType = new ArrayTypeDeclaration(identifier, from, to, subtypeIndication);
+				ArrayTypeList.Add(ParsedArrayType);
+				return ParsedArrayType; 
 			}
 			else if (fCurrentToken.Equals(TokenType.Word, "record"))
 			{
@@ -280,12 +514,13 @@ namespace VHDLparser
 				}
 				//Skip Over: end record;
 				SkipOver(TokenType.Symbol, ";");
-
-				return new RecordTypeDeclaration(identifier, identifierList, subtypeIndicationList);
+				RecordTypeDeclaration ParsedRecordType = new RecordTypeDeclaration(identifier, identifierList, subtypeIndicationList);
+				RecordTypeList.Add(ParsedRecordType);
+				return ParsedRecordType;
 			}
 			else
 			{
-				Console.WriteLine("ELSE Entered");
+		
 				List<string> enumerationList = new List<string>();
 				SkipOver(TokenType.Symbol, "(");
 				
@@ -298,8 +533,9 @@ namespace VHDLparser
 				}
 
 				ReadNextToken();
-
-				return new EnumerationTypeDeclaration(identifier, enumerationList);
+				EnumerationTypeDeclaration ParsedEnumerationType = new EnumerationTypeDeclaration(identifier, enumerationList);
+				EnumerationTypeList.Add(ParsedEnumerationType);
+				return ParsedEnumerationType;
 			}
 		}
 
@@ -355,13 +591,13 @@ namespace VHDLparser
 			SkipExpected(TokenType.Word, "is"); // skip 'is'
 
 			// PARSE GENERICS IF THERE ARE ANY
-			List<Clause> lClauses = new List<Clause>();
-			Clause lClause;
+			List<ParserNode> lParserNodes = new List<ParserNode>();
+			ParserNode lParserNode;
 			CheckForUnexpectedEndOfSource();
 			while (!fCurrentToken.Equals(TokenType.Word, "end"))
 			{
-				if ((lClause = ReadNextClause()) != null)
-					lClauses.Add(lClause);
+				if ((lParserNode = ParseNextNode()) != null)
+					lParserNodes.Add(lParserNode);
 				else throw new ParserException("Unexpected end of source.");
 			}
 	
@@ -371,7 +607,7 @@ namespace VHDLparser
 
 			parseComplete = true;
 
-			return new EntityDeclaration(moduleName, new ClauseCollection(lClauses));
+			return new EntityDeclaration(moduleName, new ParserNodeCollection(lParserNodes));
 		}
 
 		GenericClause ParseGenericClause()
@@ -392,7 +628,7 @@ namespace VHDLparser
 			ReadNextToken(); // skip ';'
 
 			InterfaceList GenericList = new InterfaceList(lInterfaceElements);
-			//Console.WriteLine(GenericList.fElements);
+		
 			return new GenericClause(GenericList);
 		}
 

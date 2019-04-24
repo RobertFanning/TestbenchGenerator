@@ -6,7 +6,7 @@ namespace VHDLparser.ParserNodes
 {
 	
 	//This is a composite type definition.
-	public class RecordTypeDeclaration : Clause
+	public class RecordTypeDeclaration : Declaration
 	{
 		public RecordTypeDeclaration(string identifier, List<string> identifierList, List<string> subtypeIndication)
 		{

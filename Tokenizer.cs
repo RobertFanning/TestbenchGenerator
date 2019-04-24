@@ -5,15 +5,13 @@ using System.IO;
 
 namespace VHDLparser
 {
-	/// <summary>Converts a sequence of characters to a sequence of tokens.</summary>
+	
 	public class Tokenizer
 	{
 		TextReader fSource; // the source to read characters from
 		char fCurrentChar; // the current character
 		StringBuilder fTokenValueBuffer; // a buffer for building the value of a token
 
-		/// <summary>Initializes a new instance of the <see cref="Tokenizer"/> class.</summary>
-		/// <param name="source">The source <see cref="TextReader"/> to read the characters from.</param>
 		public Tokenizer(TextReader source)
 		{
 			if (source == null) throw new ArgumentNullException("source");
@@ -25,8 +23,6 @@ namespace VHDLparser
 			ReadNextChar();
 		}
 
-		/// <summary>Reads the next character.</summary>
-		/// <remarks>After calling this method, fCurrentChar will contain the read character.</remarks>
 		void ReadNextChar()
 		{
 			int lChar = fSource.Read();
@@ -34,28 +30,20 @@ namespace VHDLparser
 				fCurrentChar = (char)lChar;
 			else fCurrentChar = '\0';
 		}
-
-		/// <summary>Skips the white-space characters.</summary>
-		/// <remarks>Every character that is less than or equal to the space character is considered white-space.</remarks>
 		void SkipWhitespace()
 		{
 			while (char.IsWhiteSpace(fCurrentChar))
 				ReadNextChar();
 		}
 
-		/// <summary>Gets a value indicating whether the tokenizer is at the end of the source.</summary>
-		/// <value><c>true</c> if the tokenizer is at the end of the source; otherwise, <c>false</c>.</value>
 		bool AtEndOfSource { get { return fCurrentChar == '\0'; } }
 
-		/// <summary>Appends the current character to the token value buffer and reads the next character.</summary>
 		void StoreCurrentCharAndReadNext()
 		{
 			fTokenValueBuffer.Append(fCurrentChar);
 			ReadNextChar();
 		}
 
-		/// <summary>Extracts the value from the token value buffer and clears the buffer.</summary>
-		/// <returns>The value from the token value buffer.</returns>
 		string ExtractStoredChars()
 		{
 			string lValue = fTokenValueBuffer.ToString();
@@ -63,16 +51,12 @@ namespace VHDLparser
 			return lValue;
 		}
 
-		/// <summary>Checks for an unexpected end of the source.</summary>
-		/// <exception cref="ParserException">The end of the source has been reached unexpectedly.</exception>
 		void CheckForUnexpectedEndOfSource()
 		{
 			if (AtEndOfSource)
 				throw new ParserException("Unexpected end of source.");
 		}
 
-		/// <summary>Throws a <see cref="ParserException"/> because the current character is invalid.</summary>
-		/// <exception cref="ParserException">The current character is invalid.</exception>
 		void ThrowInvalidCharException()
 		{
 			if (fTokenValueBuffer.Length == 0)
@@ -85,9 +69,6 @@ namespace VHDLparser
 			}
 		}
 
-		/// <summary>Reads the next <see cref="Token"/>.</summary>
-		/// <returns>The next <see cref="Token"/>, or <c>null</c> if the end of the source has been reached.</returns>
-		/// <exception cref="ParserException">The source contains invalid characters.</exception>
 		public Token ReadNextToken()
 		{
 			SkipWhitespace();

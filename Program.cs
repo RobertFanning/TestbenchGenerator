@@ -10,20 +10,22 @@ namespace VHDLparser
         {
             
             Console.WriteLine("The current time is " + DateTime.Now);
-            string text = File.ReadAllText(@"C:\Users\rtfa\Documents\WritingAParserBlog\intea_p.vhd");
+            string text = File.ReadAllText(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ExpressionTest.vhd");
 
             StringReader lSource = new StringReader(text);
 	
 			
             //PARSER
             Parser lParser = new Parser(lSource);
-			Clause lClause = lParser.ReadNextClause();
+			ParserNode lClause = lParser.ParseNextNode();
 			while (lClause != null)
 			{
 				//Console.WriteLine("The type of token is: " + lToken.Type + ", and it's value is: " + lToken.Value);
-   				lClause = lParser.ReadNextClause();
+   				lClause = lParser.ParseNextNode();
                 Console.WriteLine(lClause);
 			}
+
+            //lParser.ConstantList.ForEach(Console.WriteLine);
 
             Console.WriteLine("GAME OVER");
             //TOKENIZER 
