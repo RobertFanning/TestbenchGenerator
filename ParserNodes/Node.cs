@@ -7,6 +7,6 @@ namespace VHDLparser.ParserNodes
     // Node - abstract class representing one node in the expression 
     public abstract class Node
     {
-        public abstract int Eval();
+        public abstract int Eval(IContext ctx);
     }
 }

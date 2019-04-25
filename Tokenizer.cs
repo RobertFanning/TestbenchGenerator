@@ -85,8 +85,8 @@ namespace VHDLparser
 				return ReadIntegerConstant();
 
 			// if the first character is a quote, the token is a string constant
-			if (fCurrentChar == '"')
-				return ReadStringConstant();
+			//if (fCurrentChar == '"')
+			//	return ReadStringConstant();
 
 			// in all other cases, the token should be a symbol
 			return ReadSymbol();
@@ -128,20 +128,20 @@ namespace VHDLparser
 
 			return new Token(TokenType.Integer, ExtractStoredChars());
 		}
-
-		Token ReadStringConstant()
-		{
-			ReadNextChar();
-			while (!AtEndOfSource && fCurrentChar != '"')
-			{
-				StoreCurrentCharAndReadNext();
-			}
-
-			CheckForUnexpectedEndOfSource();
-			ReadNextChar();
-
-			return new Token(TokenType.String, ExtractStoredChars());
-		}
+//Removed since need to extract value from string
+		//Token ReadStringConstant()
+		//{
+		//	ReadNextChar();
+	//		while (!AtEndOfSource && fCurrentChar != '"')
+	//		{
+	//			StoreCurrentCharAndReadNext();
+	//		}
+//
+//			CheckForUnexpectedEndOfSource();
+//			ReadNextChar();
+//
+///			return new Token(TokenType.String, ExtractStoredChars());
+//		}
 
 		Token ReadSymbol()
 		{
@@ -151,6 +151,7 @@ namespace VHDLparser
 				case '+': 
 				case '(':
 				case ')':
+				case '"':
 				case ';':
 				case '.':
 				case ',':

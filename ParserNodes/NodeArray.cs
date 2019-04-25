@@ -4,20 +4,20 @@ using System.Text;
 
 namespace VHDLparser.ParserNodes
 {
-    // NodeNumber represents a literal number in the expression
-    class NodeNumber : Node
+    // NodeArray represents a literal Array in the expression
+    class NodeArray : Node
     {
-        public NodeNumber(int number)
+        public NodeArray(int Array)
         {
-            _number = number;
+            _Array = Array;
         }
 
-        int _number;             // The number
+        int _Array;             // The Array
 
         public override int Eval(IContext ctx)
         {
             // Just return it.  Too easy.
-            return _number;
+            return _Array;
         }
     }
 }

@@ -350,27 +350,94 @@ namespace VHDLparser
                 // Skip '('
                 ReadNextToken();
 
-                // Parse a top-level expression
-                var node = ParseAddSubtract();
+				if(fCurrentToken.Equals(TokenType.Word, "others"))
+				{
+					SkipOver(TokenType.Symbol, "'");
+					var node = new NodeNumber(fCurrentToken.IntValue());
+					SkipOver(TokenType.Symbol, ")");
+					return node;
+				}
+				else
+				{
+					// Parse a top-level expression
+                	var node = ParseAddSubtract();
+                
 
-                // Check and skip ')'
-                if (!fCurrentToken.Equals(TokenType.Symbol, ")"))
-					throw new ParserException("Missing close parenthesis");
-                ReadNextToken();
+                	// Check and skip ')'
+					if (!fCurrentToken.Equals(TokenType.Symbol, ")"))
+						throw new ParserException("Missing close parenthesis");
+					ReadNextToken();
 
-                // Return
-                return node;
+					// Return
+					return node;
+				}
+            }
+
+			//
+            if (fCurrentToken.Equals(TokenType.Symbol, "\""))
+            {
+                // Skip '"'
+                ReadNextToken(); //Read the number
+				
+				var node = new NodeNumber(fCurrentToken.IntValue());
+
+				ReadNextToken(); //Skip the number
+
+				// Check and skip ')'
+				if (!fCurrentToken.Equals(TokenType.Symbol, "\""))
+					throw new ParserException("Missing close asterisk");
+				ReadNextToken();
+
+				// Return
+				return node;
+				
             }
 
 			if (fCurrentToken.Type == TokenType.Word)
             {
                 // Parse a top-level expression
-				ConstantDeclaration result = ConstantList.Find(x => x.Identifier == fCurrentToken.Value);
-                var node = new NodeNumber(result.Value);
+				var name = fCurrentToken.Value;
 				ReadNextToken();
-				return node;
-            }
 
+				if (!fCurrentToken.Equals(TokenType.Symbol, "("))
+            	{
+					ConstantDeclaration result = ConstantList.Find(x => x.Identifier == name);
+					var node = new NodeNumber(result.Value);
+					return node;
+				}
+				else
+				{
+					// Function call
+                    // Skip parens
+                    ReadNextToken();
+
+                    // Parse arguments
+                    var arguments = new List<Node>();
+                    while (true)
+                    {
+                        // Parse argument and add to list
+                        arguments.Add(ParseAddSubtract());
+
+                        // Is there another argument?
+                        if (fCurrentToken.Equals(TokenType.Symbol, ","))
+                        {
+                            ReadNextToken();
+                            continue;
+                        }
+
+                        // Get out
+                        break;
+					}
+
+					// Check and skip ')'
+                    if (!fCurrentToken.Equals(TokenType.Symbol, ")"))
+                        throw new ParserException("Missing Closing Parenthesis");
+                    ReadNextToken();
+
+                    // Create the function call node
+                    return new NodeFunctionCall(name, arguments.ToArray());
+            	}
+			}
 			// Don't Understand
 			throw new ParserException("Expected ; and end of line");
 		}
@@ -431,23 +498,22 @@ namespace VHDLparser
 			string subtypeIndication = fCurrentToken.Value;
 			ReadNextToken();
 
-			//if(fCurrentToken.Equals(TokenType.Symbol, ":="))
-			//{
-				ReadNextToken();
-				Node result = ParseExpression();
-				Console.WriteLine(result.Eval());
-				ConstantDeclaration ParsedConstant = new ConstantDeclaration(identifier, subtypeIndication, result.Eval());
-				ConstantList.Add(ParsedConstant);
-				ReadNextToken();
-				return ParsedConstant;
-			//}	
-			//else // no value --CHECK THIS, IS THERE EVER AN INSTANCE WITH NO VALUE
-		//	{
-		//		SkipOver(TokenType.Symbol, ";");
-		//		ConstantDeclaration ParsedConstant = new ConstantDeclaration(identifier, subtypeIndication, 0);
-		//		ConstantList.Add(ParsedConstant);
-		//		return ParsedConstant;
-		//	}
+			// In a package, a constant may be deferred. This means its value is defined in the package body. the value may be changed by re-analysing only the package body. we do not want this
+			if(!fCurrentToken.Equals(TokenType.Symbol, ":="))
+			{
+				throw new ParserException("Constants value definition must not be deferred to body");
+			}
+
+			ReadNextToken();
+			Node result = ParseExpression();
+			MyLibrary lib = new MyLibrary();
+			ReflectionContext ctx = new ReflectionContext(lib);
+			Console.WriteLine(result.Eval(ctx));
+			ConstantDeclaration ParsedConstant = new ConstantDeclaration(identifier, subtypeIndication, result.Eval(ctx));
+			ConstantList.Add(ParsedConstant);
+			ReadNextToken();
+			return ParsedConstant;
+
 		}
 
 		SubtypeDeclaration ParseSubtypeDeclaration()

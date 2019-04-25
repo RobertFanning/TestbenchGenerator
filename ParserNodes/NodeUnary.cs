@@ -18,10 +18,10 @@ namespace VHDLparser.ParserNodes
         Node _rhs;                              // Right hand side of the operation
         Func<int, int> _op;               // The callback operator
 
-        public override int Eval()
+        public override int Eval(IContext ctx)
         {
             // Evaluate RHS
-            var rhsVal = _rhs.Eval();
+            var rhsVal = _rhs.Eval(ctx);
 
             // Evaluate and return
             var result = _op(rhsVal);
