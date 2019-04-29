@@ -7,21 +7,20 @@ namespace VHDLparser.ParserNodes
 	
 	public class SubtypeDeclaration : Declaration
 	{
-		public SubtypeDeclaration(string identifier, string subtype_indication)
+		public SubtypeDeclaration(string identifier, SubtypeIndication subtype)
 		{
 			if (identifier == null) throw new ArgumentNullException("indentifier");
-			if (subtype_indication == null) throw new ArgumentNullException("subtype_indication");
 
 			fIdentifier = identifier;
-			fsubtype_indication = subtype_indication;
+			fSubtype = subtype;
 		}
 
 		readonly string fIdentifier;
 	
 		public string Identifier { get { return fIdentifier; } }
 
-		readonly string fsubtype_indication;
+		readonly SubtypeIndication fSubtype;
 
-		public string subtype_indication { get { return fsubtype_indication; } }
+		public SubtypeIndication Subtype { get { return fSubtype; } }
 	}
 }

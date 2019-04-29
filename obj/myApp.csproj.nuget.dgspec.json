@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\myApp.csproj": {}
+    "C:\\Users\\rober\\Documents\\VHDL PARSER\\VHDLparser\\myApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\myApp.csproj": {
+    "C:\\Users\\rober\\Documents\\VHDL PARSER\\VHDLparser\\myApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\myApp.csproj",
+        "projectUniqueName": "C:\\Users\\rober\\Documents\\VHDL PARSER\\VHDLparser\\myApp.csproj",
         "projectName": "myApp",
-        "projectPath": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\myApp.csproj",
-        "packagesPath": "C:\\Users\\rtfa\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\rtfa\\Documents\\WritingAParserBlog\\VHDLparser\\obj\\",
+        "projectPath": "C:\\Users\\rober\\Documents\\VHDL PARSER\\VHDLparser\\myApp.csproj",
+        "packagesPath": "C:\\Users\\rober\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\rober\\Documents\\VHDL PARSER\\VHDLparser\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
         ],
         "configFilePaths": [
-          "C:\\Users\\rtfa\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\rober\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "netcoreapp2.2"

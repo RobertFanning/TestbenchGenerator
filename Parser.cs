@@ -14,6 +14,10 @@ namespace VHDLparser
 
 		bool parseComplete;
 
+		MyLibrary lib;
+		ReflectionContext ctx;
+
+
 		//Lists for storing Parameters extracted from package
 		List<ConstantDeclaration>         ConstantList;
 
@@ -25,6 +29,8 @@ namespace VHDLparser
 
 		List<RecordTypeDeclaration>       RecordTypeList;
 
+
+
 		//Initializes a new instance of the "Parser" class.
 		//The source "TextReader" to read the tokens from.
 		public Parser(TextReader source)
@@ -34,6 +40,11 @@ namespace VHDLparser
 			fTokenizer = new Tokenizer(source);
 
 			parseComplete = false;
+
+			//Library of known methods
+			lib = new MyLibrary();
+
+			ctx = new ReflectionContext(lib);
 
 			ConstantList = new List<ConstantDeclaration>();
 
@@ -195,8 +206,8 @@ namespace VHDLparser
             var expr = ParseAddSubtract();
 
 			Console.WriteLine(fCurrentToken.Value);
-            // Check if the entire expression until the end of line has been parsed
-            if (!fCurrentToken.Equals(TokenType.Symbol, ";"))
+            // Check if the entire expression until the end of line or a reserved word has been parsed
+            if (!(fCurrentToken.Equals(TokenType.Symbol, ";") || ReservedWords.IsReservedWord(fCurrentToken.Value)))
                 throw new ParserException("Expected ; and end of line");
 
             return expr;	
@@ -337,6 +348,7 @@ namespace VHDLparser
 		Node ParseLeaf()
 		{
 			// Is it a number?
+
 			if (fCurrentToken.Type == TokenType.Integer)
 			{
 				var node = new NodeNumber(fCurrentToken.IntValue());
@@ -443,7 +455,39 @@ namespace VHDLparser
 		}
 	
 		//---------------------------------------------------------------------------------------
+		//Subtype Indication parsing 27 - Apr - 2019
 
+		SubtypeIndication ParseSubtypeIndication()
+		{
+			//SubTypeIndication: [ resolution_function_name ] type_mark [ constraint ]
+			// $type($upper downto $lower) || $type range $lower to $upper
+			string type = fCurrentToken.Value;
+			ReadNextToken();
+			//Either type X downto Y
+			if(fCurrentToken.Equals(TokenType.Symbol, "("))
+			{
+				ReadNextToken(); //Skip parenthesis since its only opening parenthesis.
+				Node upper = ParseExpression();
+				SkipExpected(TokenType.Word, "downto");
+				Node lower = ParseExpression();
+				SubtypeIndication ParsedSubtype = new SubtypeIndication(type, upper, lower);
+
+				return ParsedSubtype;
+			}
+			//Else range Y to X
+			else
+			{
+				SkipExpected(TokenType.Word, "range");
+				Node lower = ParseExpression();
+				SkipExpected(TokenType.Word, "to");
+				Node upper = ParseExpression();
+				SubtypeIndication ParsedSubtype = new SubtypeIndication(type, upper, lower);
+
+				return ParsedSubtype;
+			}
+		}
+
+		//---------------------------------------------------------------------------------------
 
 		PackageDeclaration ParsePackageDeclaration()
 		{
@@ -506,9 +550,6 @@ namespace VHDLparser
 
 			ReadNextToken();
 			Node result = ParseExpression();
-			MyLibrary lib = new MyLibrary();
-			ReflectionContext ctx = new ReflectionContext(lib);
-			Console.WriteLine(result.Eval(ctx));
 			ConstantDeclaration ParsedConstant = new ConstantDeclaration(identifier, subtypeIndication, result.Eval(ctx));
 			ConstantList.Add(ParsedConstant);
 			ReadNextToken();
@@ -524,17 +565,14 @@ namespace VHDLparser
 			ReadNextToken(); //skip identifier
 			SkipExpected(TokenType.Word, "is");
 
-			string subtypeIndication = fCurrentToken.Value;
+			SubtypeIndication subtype = ParseSubtypeIndication();
+
 
 			//Read until end of line
-			while (!fCurrentToken.Equals(TokenType.Symbol, ";")) 
-			{
-				ReadNextToken();
-			}
+			SkipExpected(TokenType.Symbol, ";");
 
-			ReadNextToken(); // skip ;
-			
-			SubtypeDeclaration ParsedSubtype = new SubtypeDeclaration(identifier, subtypeIndication);
+
+			SubtypeDeclaration ParsedSubtype = new SubtypeDeclaration(identifier, subtype);
 			SubtypeList.Add(ParsedSubtype);
 
 			return ParsedSubtype;
