@@ -14,7 +14,7 @@ namespace VHDLparser.ParserNodes
 
         int _number;             // The number
 
-        public override int Eval(IContext ctx)
+        public override int Eval()
         {
             // Just return it.  Too easy.
             return _number;

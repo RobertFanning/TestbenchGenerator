@@ -4,19 +4,17 @@ using System.Text;
 
 namespace VHDLparser.ParserNodes
 {
-	/// <summary>Represents an if-Clause.</summary>
 	public class LibraryClause : Clause
 	{
-		public LibraryClause(Token library)
+		public LibraryClause(string library)
 		{
 			if (library == null) throw new ArgumentNullException("library");
 	
 			fLibrary = library;
 		}
 
-		readonly Token fLibrary;
-		/// <summary>Gets the condition of this if-Clause.</summary>
-		/// <value>The condition of this if-Clause.</value>
-		public Token Library { get { return fLibrary; } }
+		readonly string fLibrary;
+		
+		public string Library { get { return fLibrary; } }
 	}
 }

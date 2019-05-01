@@ -10,7 +10,7 @@ namespace VHDLparser
         {
             
             Console.WriteLine("The current time is " + DateTime.Now);
-            string text = File.ReadAllText(@"C:\Users\rober\Documents\VHDL PARSER\VHDLparser\ExpressionTest.vhd");
+            string text = File.ReadAllText(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ExpressionTest.vhd");
 
             StringReader lSource = new StringReader(text);
 	

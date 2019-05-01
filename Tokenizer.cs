@@ -1,154 +1,137 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
+using System.Text;
 
-namespace VHDLparser
-{
-	
-	public class Tokenizer
-	{
-		TextReader fSource; // the source to read characters from
-		char fCurrentChar; // the current character
-		StringBuilder fTokenValueBuffer; // a buffer for building the value of a token
+namespace VHDLparser {
 
-		public Tokenizer(TextReader source)
-		{
-			if (source == null) throw new ArgumentNullException("source");
+	// Tokenizer is utilized for the deconstruction of the input into discrete identifiable tokens.
+	public class Tokenizer {
+		// Input source to be parsed.
+		TextReader fSource;
+		// Current Character being processed by tokenizer.
+		char fCurrentChar;
+		// Buffer for building the value of a token when multiple characters required.
+		StringBuilder fTokenValueBuffer;
+
+		// Constructor requires source to be parsed else exception is thrown. 
+		// The parsing process is commenced by the triggering of ReadNextChar().
+		public Tokenizer (TextReader source) {
+			if (source == null) throw new ArgumentNullException ("source");
 
 			fSource = source;
-			fTokenValueBuffer = new StringBuilder();
+			fTokenValueBuffer = new StringBuilder ();
 
-			// read the first character
-			ReadNextChar();
+			// First character is read.
+			ReadNextChar ();
 		}
 
-		void ReadNextChar()
-		{
-			int lChar = fSource.Read();
+		// Next character in source is read, if >0 it is cast to char else null character.
+		void ReadNextChar () {
+			int lChar = fSource.Read ();
 			if (lChar > 0)
-				fCurrentChar = (char)lChar;
+				fCurrentChar = (char) lChar;
 			else fCurrentChar = '\0';
 		}
-		void SkipWhitespace()
-		{
-			while (char.IsWhiteSpace(fCurrentChar))
-				ReadNextChar();
+		
+		// IsWhiteSpace tests for spaces and newlines, these are skipped using ReadNextToken.
+		void SkipWhitespace () {
+			while (char.IsWhiteSpace (fCurrentChar))
+				ReadNextChar ();
 		}
 
+		// Trivial method for determining if the end of source has been reached.
 		bool AtEndOfSource { get { return fCurrentChar == '\0'; } }
 
-		void StoreCurrentCharAndReadNext()
-		{
-			fTokenValueBuffer.Append(fCurrentChar);
-			ReadNextChar();
+		// Current character is appended to buffer.
+		void StoreCurrentCharAndReadNext () {
+			fTokenValueBuffer.Append (fCurrentChar);
+			ReadNextChar ();
 		}
 
-		string ExtractStoredChars()
-		{
-			string lValue = fTokenValueBuffer.ToString();
+		// Characters stored in buffer are extracted and buffer is reset.
+		string ExtractStoredChars () {
+			string lValue = fTokenValueBuffer.ToString ();
 			fTokenValueBuffer.Length = 0;
 			return lValue;
 		}
 
-		void CheckForUnexpectedEndOfSource()
-		{
+		// Exception thrown for the unexpected end of source.
+		void CheckForUnexpectedEndOfSource () {
 			if (AtEndOfSource)
-				throw new ParserException("Unexpected end of source.");
+				throw new ParserException ("Unexpected end of source.");
 		}
 
-		void ThrowInvalidCharException()
-		{
+		// Exception thrown when a symbol that is not recognised is read. 
+		// Recognised symbols are specified in the ReadSymbol mehtod.
+		void ThrowInvalidCharException () {
 			if (fTokenValueBuffer.Length == 0)
-				throw new ParserException("Invalid character '" + fCurrentChar.ToString() + "'.");
-			else
-			{
-				throw new ParserException("Invalid character '" 
-					+ fCurrentChar.ToString() + "' after '" 
-					+ fTokenValueBuffer.ToString() + "'.");
+				throw new ParserException ("Invalid character '" + fCurrentChar.ToString () + "'.");
+			else {
+				throw new ParserException ("Invalid character '" +
+					fCurrentChar.ToString () + "' after '" +
+					fTokenValueBuffer.ToString () + "'.");
 			}
 		}
 
-		public Token ReadNextToken()
-		{
-			SkipWhitespace();
+		// White space is skipped (if present) before the tokenization process begins.
+		public Token ReadNextToken () {
+			SkipWhitespace ();
 
 			if (AtEndOfSource)
 				return null;
 
 			// if the first character is a letter, the token is a word
-			if (char.IsLetter(fCurrentChar))
-				return ReadWord();
+			if (char.IsLetter (fCurrentChar))
+				return ReadWord ();
 
 			// if the first character is a digit, the token is an integer constant
-			if (char.IsDigit(fCurrentChar))
-				return ReadIntegerConstant();
-
-			// if the first character is a quote, the token is a string constant
-			//if (fCurrentChar == '"')
-			//	return ReadStringConstant();
+			if (char.IsDigit (fCurrentChar))
+				return ReadIntegerConstant ();
 
 			// in all other cases, the token should be a symbol
-			return ReadSymbol();
+			return ReadSymbol ();
 		}
 
-		Token ReadWord()
-		{
-			//do while: word can be composed of letters or digits or underscores
-			do
-			{
-				StoreCurrentCharAndReadNext();
+		// Method for extracting each character until the end of the word has ben reached.
+		// Words can contain letters, digits or underscores.
+		Token ReadWord () {
+			do {
+				StoreCurrentCharAndReadNext ();
 			}
-			while (char.IsLetterOrDigit(fCurrentChar) || fCurrentChar.Equals('_'));
+			while (char.IsLetterOrDigit (fCurrentChar) || fCurrentChar.Equals ('_'));
 
-			return new Token(TokenType.Word, ExtractStoredChars());
+			return new Token (TokenType.Word, ExtractStoredChars ());
 		}
 
-		//This will be triggered from read symbol and will only complete at the termination of a line.
-		void ReadComment()
-		{
-			//do while: word can be composed of letters or digits or underscores
-			//Want to discard comments so no values are stored.
-			do
-			{
-				ReadNextChar();
+		// This method is triggered from ReadSymbol method, when the symbol -- has been read.
+		// The comment is read and ignored until the end of line.
+		void ReadComment () {
+			do {
+				ReadNextChar ();
 			}
-			while (!fCurrentChar.Equals('\n'));
-			//Clears the buffer after any comment is parsed.
+			while (!fCurrentChar.Equals ('\n'));
+			//Clears the buffer after comment is read.
 			fTokenValueBuffer.Length = 0;
 		}
 
-		Token ReadIntegerConstant()
-		{
-			do
-			{
-				StoreCurrentCharAndReadNext();
+		// Integers may only contain numbers. This method reads characters until non digit is reached.
+		Token ReadIntegerConstant () {
+			do {
+				StoreCurrentCharAndReadNext ();
 			}
-			while (char.IsDigit(fCurrentChar));
+			while (char.IsDigit (fCurrentChar));
 
-			return new Token(TokenType.Integer, ExtractStoredChars());
+			return new Token (TokenType.Integer, ExtractStoredChars ());
 		}
-//Removed since need to extract value from string
-		//Token ReadStringConstant()
-		//{
-		//	ReadNextChar();
-	//		while (!AtEndOfSource && fCurrentChar != '"')
-	//		{
-	//			StoreCurrentCharAndReadNext();
-	//		}
-//
-//			CheckForUnexpectedEndOfSource();
-//			ReadNextChar();
-//
-///			return new Token(TokenType.String, ExtractStoredChars());
-//		}
 
-		Token ReadSymbol()
-		{
-			switch (fCurrentChar)
-			{
-				// the symbols + - * / ( ) ,
-				case '+': 
+		// Method for extacting and bundling read symbols.
+		// VHDL contains symbols that require more than a single character,
+		// these must therefore be stored as a token together since their individual function differs.
+		Token ReadSymbol () {
+			switch (fCurrentChar) {
+				// The symbols below do not appear joined with other symbols and are therefore directly stored as tokens
+				case '+':
 				case '(':
 				case ')':
 				case '"':
@@ -156,48 +139,48 @@ namespace VHDLparser
 				case '.':
 				case ',':
 				case '\'':
-					StoreCurrentCharAndReadNext();
-					return new Token(TokenType.Symbol, ExtractStoredChars());
-				// the symbols := ==
+					StoreCurrentCharAndReadNext ();
+					return new Token (TokenType.Symbol, ExtractStoredChars ());
+				// Both ':' and ':=' are possible symbols
 				case ':':
-					StoreCurrentCharAndReadNext();
-					if (fCurrentChar == '=')
-					{
-						StoreCurrentCharAndReadNext();
+					StoreCurrentCharAndReadNext ();
+					if (fCurrentChar == '=') {
+						StoreCurrentCharAndReadNext ();
 					}
-					return new Token(TokenType.Symbol, ExtractStoredChars());
+					return new Token (TokenType.Symbol, ExtractStoredChars ());
 
-				//** is needed for exponential numbers.
+				// *  denotes multiplication.
+				// ** denotes exponents.
 				case '*':
-					StoreCurrentCharAndReadNext();
-					if (fCurrentChar == '*')
-					{
-						StoreCurrentCharAndReadNext();
+					StoreCurrentCharAndReadNext ();
+					if (fCurrentChar == '*') {
+						StoreCurrentCharAndReadNext ();
 					}
-					return new Token(TokenType.Symbol, ExtractStoredChars());
+					return new Token (TokenType.Symbol, ExtractStoredChars ());
 
+				// =, ==. => are all valid symbols
 				case '=':
-					StoreCurrentCharAndReadNext();
-					if (fCurrentChar == '=' || fCurrentChar == '>')
-					{
-						StoreCurrentCharAndReadNext();
+					StoreCurrentCharAndReadNext ();
+					if (fCurrentChar == '=' || fCurrentChar == '>') {
+						StoreCurrentCharAndReadNext ();
 					}
-					return new Token(TokenType.Symbol, ExtractStoredChars());
+					return new Token (TokenType.Symbol, ExtractStoredChars ());
 
-				// for comments --
+				// -  denotes subtraction.
+				// -- denotes a comment.
 				case '-':
-					StoreCurrentCharAndReadNext();
-					if (fCurrentChar == '-')
-					{
-						StoreCurrentCharAndReadNext();
-						ReadComment();
-						return ReadNextToken();
+					StoreCurrentCharAndReadNext ();
+					if (fCurrentChar == '-') {
+						StoreCurrentCharAndReadNext ();
+						ReadComment ();
+						return ReadNextToken ();
 					}
-					return new Token(TokenType.Symbol, ExtractStoredChars());
-			
+					return new Token (TokenType.Symbol, ExtractStoredChars ());
+
+				// If none of the above cases are satisfied then an invalid character has been read.
 				default:
-					CheckForUnexpectedEndOfSource();
-					ThrowInvalidCharException();
+					CheckForUnexpectedEndOfSource ();
+					ThrowInvalidCharException ();
 					break;
 			}
 

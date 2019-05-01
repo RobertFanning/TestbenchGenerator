@@ -7,17 +7,17 @@ namespace VHDLparser.ParserNodes
     // NodeArray represents a literal Array in the expression
     class NodeArray : Node
     {
-        public NodeArray(int Array)
+        public NodeArray(Node[] arrayElements)
         {
-            _Array = Array;
+            fArrayElements = arrayElements;
         }
 
-        int _Array;             // The Array
+        Node[] fArrayElements;             // The Array
 
-        public override int Eval(IContext ctx)
+        public override int Eval()
         {
             // Just return it.  Too easy.
-            return _Array;
+            return fArrayElements.Length;
         }
     }
 }

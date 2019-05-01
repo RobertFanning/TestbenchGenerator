@@ -8,7 +8,7 @@ namespace VHDLparser.ParserNodes
 	/// <summary>Represents an if-Clause.</summary>
 	public class UseClause : Clause
 	{
-		public UseClause(Token library, Token package)
+		public UseClause(string library, string package)
 		{
 			if (library == null) throw new ArgumentNullException("library");
 			if (package == null) throw new ArgumentNullException("package");
@@ -18,11 +18,11 @@ namespace VHDLparser.ParserNodes
 			fPackage = package;
 		}
 
-		readonly Token fLibrary;
-		public Token Library { get { return fLibrary; } }
+		readonly string fLibrary;
+		public string Library { get { return fLibrary; } }
 
-		readonly Token fPackage;
-		public Token Package { get { return fPackage; } }
+		readonly string fPackage;
+		public string Package { get { return fPackage; } }
 
 	}
 }

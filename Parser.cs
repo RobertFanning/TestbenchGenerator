@@ -1,487 +1,265 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
+using System.Text;
 using VHDLparser.ParserNodes;
 
-namespace VHDLparser
+namespace VHDLparser 
 {
-	//Transforms a sequence of tokens into a tree of operators and operands.
-	public class Parser
+	// The Parser class contains the vast functionality of this VHDLparser.
+	public class Parser 
 	{
-		Tokenizer fTokenizer; // the tokenizer to read tokens from
-		Token fCurrentToken; // the current token
-
+		//----------------------------------------------------------------------------------------
+		//                            Class Objects and Constructor
+		
+		// Tokenizer is required for the deconstruction of the input code into discrete tokens.
+		Tokenizer fTokenizer; 
+		// Current token created to store the current token that has been read.
+		Token fCurrentToken;
+		// parseComplete is a bool trigger to determine when parsing is finished.
 		bool parseComplete;
-
+		// lib of type MyLibrary contains the operations of all possible predefined VHDL functions.
 		MyLibrary lib;
-		ReflectionContext ctx;
+		// Below are a series of lists for storing declarations parsed from a package that may need to be referenced later.
+		// ConstantList, is a list of constant declarations.
+		List<ConstantDeclaration> ConstantList;
+		// SubtypeList, is a list of subtype declarations.
+		List<SubtypeDeclaration> SubtypeList;
+		// There are multiple versions of type declarations each using different definition structures, therefore requiring separated classes and lists.
+		List<ArrayTypeDeclaration> ArrayTypeList;
 
+		List<EnumerationTypeDeclaration> EnumerationTypeList;
 
-		//Lists for storing Parameters extracted from package
-		List<ConstantDeclaration>         ConstantList;
+		List<RecordTypeDeclaration> RecordTypeList;
 
-		List<SubtypeDeclaration>          SubtypeList;
+		// Constructor requires a source to be parsed.
+		// All objects declared above are created.
 
-		List<ArrayTypeDeclaration>        ArrayTypeList;
-
-		List<EnumerationTypeDeclaration>  EnumerationTypeList;
-
-		List<RecordTypeDeclaration>       RecordTypeList;
-
-
-
-		//Initializes a new instance of the "Parser" class.
-		//The source "TextReader" to read the tokens from.
-		public Parser(TextReader source)
+		public Parser (TextReader source) 
 		{
-			if (source == null) throw new ArgumentNullException("source");
+			if (source == null) throw new ArgumentNullException ("source");
 
-			fTokenizer = new Tokenizer(source);
+			fTokenizer = new Tokenizer (source);
 
 			parseComplete = false;
 
-			//Library of known methods
-			lib = new MyLibrary();
+			lib = new MyLibrary ();
 
-			ctx = new ReflectionContext(lib);
+			ConstantList = new List<ConstantDeclaration> ();
 
-			ConstantList = new List<ConstantDeclaration>();
+			SubtypeList = new List<SubtypeDeclaration> ();
 
-			SubtypeList = new List<SubtypeDeclaration>();
+			ArrayTypeList = new List<ArrayTypeDeclaration> ();
 
-			ArrayTypeList = new List<ArrayTypeDeclaration>();
+			EnumerationTypeList = new List<EnumerationTypeDeclaration> ();
 
-			EnumerationTypeList = new List<EnumerationTypeDeclaration>();
+			RecordTypeList = new List<RecordTypeDeclaration> ();
 
-			RecordTypeList = new List<RecordTypeDeclaration>();
-
-			// read the first token
-			ReadNextToken();
+			// First token is read to commence the parsing processs.
+			ReadNextToken ();
 		}
 
-		//Reads the next token.
-		//After calling this method, fCurrentToken will contain the read token.
-		void ReadNextToken() { fCurrentToken = fTokenizer.ReadNextToken(); }
+		//----------------------------------------------------------------------------------------
+		//                                   Helper Methods
 
-		//Gets a value indicating whether the parser is at the end of the source.
-		/// If true the parser is at the end of the source.
+		// Reads the next token.
+		// After calling this method, fCurrentToken will contain the read token.
+		void ReadNextToken () { fCurrentToken = fTokenizer.ReadNextToken (); }
+
+		// Gets a value indicating whether the parser is at the end of the source.
+		// If true the parser is at the end of the source.
 		bool AtEndOfSource { get { return fCurrentToken == null; } }
 
-		//Checks for an unexpected end of the source.
-		/// Throws "ParserException" The end of the source has been reached unexpectedly.
-		void CheckForUnexpectedEndOfSource()
+		// Checks for an unexpected end of the source.
+		// Throws "ParserException" The end of the source has been reached unexpectedly.
+		void CheckForUnexpectedEndOfSource () 
 		{
 			if (AtEndOfSource)
-				throw new ParserException("Unexpected end of source.");
+				throw new ParserException ("Unexpected end of source.");
 		}
 
-		//Skips the current token if it is the specified token, or throws a "ParserException"
-		//"type" is the type of token to expect.
-		//"value" is the value of the token to expect.
-		void SkipExpected(TokenType type, string value)
+		// Skips the current token if it is the specified token, or throws a "ParserException"
+		// "type" is the type of token to expect, "value" is the value of the token to expect.
+		void SkipExpected (TokenType type, string value) 
 		{
-			CheckForUnexpectedEndOfSource();
-			if (!fCurrentToken.Equals(type, value))
-				throw new ParserException("Expected '" + value + "'. But instead got '" + fCurrentToken.Value + "'.");
-			ReadNextToken();
+			CheckForUnexpectedEndOfSource ();
+			if (!fCurrentToken.Equals (type, value))
+				throw new ParserException ("Expected '" + value + "'. But instead got '" + fCurrentToken.Value + "'.");
+			ReadNextToken ();
 		}
 
-		//Reads until specified token and then skips it.
-		void SkipOver(TokenType type, string value)
+		// Skips the current token if it is the same as the type and value passed.
+		void SkipIfPresent (TokenType type, string value) 
 		{
-			CheckForUnexpectedEndOfSource();
-			while (!fCurrentToken.Equals(type, value))
+			CheckForUnexpectedEndOfSource ();
+			if (fCurrentToken.Equals (type, value))
+				ReadNextToken ();
+		}
+
+		// Reads tokens until specified token and then skips it.
+		void SkipOver (TokenType type, string value) 
+		{
+			CheckForUnexpectedEndOfSource ();
+			while (!fCurrentToken.Equals (type, value)) 
 			{
-				ReadNextToken();
+				ReadNextToken ();
 			}
-		    ReadNextToken(); //Skip specified token
+			ReadNextToken (); //Skip specified token
 		}
 
-		//Reads the next Clause.
-		//The next Clause, or null if the end of the source has been reached.
-		//"ParserException" the source code is invalid.
-
-		public ParserNode ParseNextNode()
+		// This method is for determining the specified attribute for a type.
+		// Currently only 3 attributes have been defined (left, right and length).
+		// Attributes can be called on types or subtypes, therefore cases for each are specified below.
+		int DetermineAttribute (string Attribute, string Type) 
 		{
-			
+			// It is first determined whether the subtype passed exists in the list of subtypes.
+			if (SubtypeList.Exists (x => x.Identifier == Type)) 
+			{
+				// The subtype is found and stored in chosenType.
+				SubtypeDeclaration chosenType = SubtypeList.Find (x => x.Identifier == Type);
+				// The correct attribute is fetched depending on the passed string.
+				if (Attribute == "left")
+					return chosenType.Left;
+
+				if (Attribute == "right")
+					return chosenType.Right;
+
+				if (Attribute == "length")
+					return (Math.Abs (chosenType.Left - chosenType.Right) + 1);
+
+				throw new ParserException ("Attribute Provided is not recognised");
+			} else if (EnumerationTypeList.Exists (x => x.Identifier == Type)) {
+				EnumerationTypeDeclaration chosenType = EnumerationTypeList.Find (x => x.Identifier == Type);
+				if (Attribute == "left")
+					return chosenType.Left;
+
+				if (Attribute == "right")
+					return chosenType.Right;
+
+				if (Attribute == "length")
+					return (Math.Abs (chosenType.Left - chosenType.Right) + 1);
+
+				throw new ParserException ("Attribute Provided is not recognised");
+			}
+			// If the type passed is neither a subtype or a type an exception is thrown. 
+			else 
+			{
+				throw new ParserException ("Cannot determine attribute, Type/Subtype not recognized.");
+			}
+		}
+
+		// ParseNextNode parses the input source determining if a node is present.
+		// The nodes represent the different VHDL constructs. The nodes are identified by their starting token.
+		// Below 10 nodes have been difined, the tokens used to identify these should be the first token of each new node.
+		public ParserNode ParseNextNode () 
+		{
+
 			if (AtEndOfSource || parseComplete)
 				return null;
 
 			// all the Clauses start with a word
 			if (fCurrentToken.Type != TokenType.Word)
-				throw new ParserException("Expected a Clause.");
+				throw new ParserException ("Expected a Clause.");
 
 			if (fCurrentToken.Value == "library")
-				return ParseLibraryClause();
+				return ParseLibraryClause ();
 
 			if (fCurrentToken.Value == "use")
-				return ParseUseClause();
-			
+				return ParseUseClause ();
+
 			if (fCurrentToken.Value == "package")
-				return ParsePackageDeclaration();
+				return ParsePackageDeclaration ();
 
 			if (fCurrentToken.Value == "constant")
-				return ParseConstantDeclaration();
+				return ParseConstantDeclaration ();
 
 			if (fCurrentToken.Value == "type")
-				return ParseTypeDeclaration();
+				return ParseTypeDeclaration ();
 
 			if (fCurrentToken.Value == "subtype")
-				return ParseSubtypeDeclaration();
+				return ParseSubtypeDeclaration ();
 
 			if (fCurrentToken.Value == "function")
-				return ParseFunctionDeclaration();
+				return ParseFunctionDeclaration ();
 
 			if (fCurrentToken.Value == "entity")
-				return ParseEntityDeclaration();
+				return ParseEntityDeclaration ();
 
 			if (fCurrentToken.Value == "generic")
-				return ParseGenericClause();
+				return ParseGenericClause ();
 
 			if (fCurrentToken.Value == "port")
-				return ParsePortClause();
+				return ParsePortClause ();
 
 			return null;
 		}
 
-
-		//use_clause ::= use selected_name { , selected_name } ;
-		UseClause ParseUseClause()
+		// Use clauses have a strict structure in VHDL, and are defined as:
+		//                       use prefix.suffix
+		// The prefix contains the library where the package is located and,
+		// the packages name. Following that is the suffix, which in most 
+		// cases is all.
+		UseClause ParseUseClause () 
 		{
-			// Use-Clause:
-			//   use work.intea_p.all;
+			// The "use" node is skipped.
+			ReadNextToken (); 
+			// The library is extracted.
+			string lLibrary = fCurrentToken.Value;
+			// The library token is skipped along with the neighbouring '.'
+			SkipOver (TokenType.Symbol, "."); 
+			// The package is extracted.
+			string lPackage = fCurrentToken.Value;
+			// The package token is skipped along with the neighbouring '.'
+			SkipOver (TokenType.Symbol, "."); 
+			// The "all" typically present is skipped, this may need to be adjusted.
+			SkipExpected (TokenType.Word, "all"); // skip '.'
 
-			ReadNextToken(); // skip 'use'
-
-			ReadNextToken();
-			Token lLibrary = fCurrentToken;
-
-			SkipExpected(TokenType.Symbol, "."); // skip '.'
-
-			ReadNextToken();
-			Token lPackage = fCurrentToken;
-
-			SkipExpected(TokenType.Symbol, "."); // skip '.'
-
-			SkipExpected(TokenType.Word, "all"); // skip '.'
-
-			SkipExpected(TokenType.Symbol, ";"); // skip '.'
-			
-			return new UseClause(lLibrary, lPackage);
+			SkipExpected (TokenType.Symbol, ";"); // skip '.'
+			// The parsed use clause is created and returned.
+			return new UseClause (lLibrary, lPackage);
 		}
 
-		//library_clause ::= library logical_name_list ;
-		LibraryClause ParseLibraryClause()
+		// Library clauses too have a strict structure they obey, this is:
+		//                      library logical_name
+		// The logical_name is just a simple identifier of the library.
+		LibraryClause ParseLibraryClause () 
 		{
-			// Use-Clause:
-			//   use work.intea_p.all;
-
-			ReadNextToken(); // skip 'Library'
-
-			ReadNextToken();
-			Token lLibrary = fCurrentToken;
-
-			ReadNextToken(); // skip ';'
-			
-			return new LibraryClause(lLibrary);
+			// The "library" node is skipped.
+			ReadNextToken ();
+			// The "library" identifier is extracted.
+			string lLibrary = fCurrentToken.Value;
+			// The rest of the line is read until the end.
+			SkipOver (TokenType.Symbol, ";"); 
+			// The parsed library clause is created and returned.
+			return new LibraryClause (lLibrary);
 		}
-
-        //----------------------------------24-04-2019-------------------------------------------
-		//Parse Expression:
-		//expressions 
-		//Integer: if the first value is a number followed by ; we have an int
-
-		//Constant: if the first value is a word followed by ; 
-
-		//Function: first value is word followed by ( 
-
-		//Array: first value is ( followed by strings separated by ,
-
-		//Otheres: ( others =>
-
-		Node ParseExpression()
-		{
-		   // For the moment, all we understand is add and subtract
-            var expr = ParseAddSubtract();
-
-			Console.WriteLine(fCurrentToken.Value);
-            // Check if the entire expression until the end of line or a reserved word has been parsed
-            if (!(fCurrentToken.Equals(TokenType.Symbol, ";") || ReservedWords.IsReservedWord(fCurrentToken.Value)))
-                throw new ParserException("Expected ; and end of line");
-
-            return expr;	
 
 		
-		}
-
-
-				// Parse an sequence of add/subtract operators
-		Node ParseAddSubtract()
-		{
-			// Parse the left hand side
-			var lhs = ParseMultiplyDivide();
-
-			while (true)
-			{
-				// Work out the operator
-				Func<int, int, int> op = null;
-				if (fCurrentToken.Equals(TokenType.Symbol, "+"))
-				{
-					op = (a, b) => a + b;
-				}
-				else if (fCurrentToken.Equals(TokenType.Symbol, "-"))
-				{
-					op = (a, b) => a - b;
-				}
-
-				// Binary operator found?
-				if (op == null)
-					return lhs;             // no
-		
-				// Skip the operator
-				ReadNextToken();
-
-				// Parse the right hand side of the expression
-				var rhs = ParseMultiplyDivide();
-
-				// Create a binary node and use it as the left-hand side from now on
-				lhs = new NodeBinary(lhs, rhs, op);
-			}
-		}
-
-
-        // Parse an sequence of add/subtract operators
-        Node ParseMultiplyDivide()
-        {
-            // Parse the left hand side
-            var lhs = ParseExponent();
-
-            while (true)
-            {
-                // Work out the operator
-                Func<int, int, int> op = null;
-                if (fCurrentToken.Equals(TokenType.Symbol, "*"))
-                {
-                    op = (a, b) => a * b;
-                }
-                else if (fCurrentToken.Equals(TokenType.Symbol, "/"))
-                {
-                    op = (a, b) => a / b;
-                }
-
-                // Binary operator found?
-                if (op == null)
-                    return lhs;             // no
-
-                // Skip the operator
-                ReadNextToken();
-
-                // Parse the right hand side of the expression
-                var rhs = ParseExponent();
-
-                // Create a binary node and use it as the left-hand side from now on
-                lhs = new NodeBinary(lhs, rhs, op);
-            }
-        }
-
-		Node ParseExponent()
-        {
-            // Parse the left hand side
-            var lhs = ParseUnary();
-
-            while (true)
-            {
-                // Work out the operator
-                Func<int, int, int> op = null;
-                if (fCurrentToken.Equals(TokenType.Symbol, "**"))
-                {
-                    op = (a, b) => (int) Math.Pow(a, b);
-                }
-
-                // Binary operator found?
-                if (op == null)
-                    return lhs;             // no
-
-                // Skip the operator
-                ReadNextToken();
-
-                // Parse the right hand side of the expression
-                var rhs = ParseUnary();
-
-                // Create a binary node and use it as the left-hand side from now on
-                lhs = new NodeBinary(lhs, rhs, op);
-            }
-        }
-
-		Node ParseUnary()
-		{
-			// Positive operator is a no-op so just skip it
-			if (fCurrentToken.Equals(TokenType.Symbol, "+"))
-			{
-				// Skip
-				ReadNextToken();
-				return ParseUnary();
-			}
-
-			// Negative operator
-			if (fCurrentToken.Equals(TokenType.Symbol, "-"))
-			{
-				// Skip
-				ReadNextToken();
-
-				// Parse RHS 
-				// Note this recurses to self to support negative of a negative
-				var rhs = ParseUnary();
-
-				// Create unary node
-				return new NodeUnary(rhs, (a) => -a);
-			}
-
-			// No positive/negative operator so parse a leaf node
-			return ParseLeaf();
-		}
-
-
-		// Parse a leaf node
-		// (For the moment this is just a number)
-		Node ParseLeaf()
-		{
-			// Is it a number?
-
-			if (fCurrentToken.Type == TokenType.Integer)
-			{
-				var node = new NodeNumber(fCurrentToken.IntValue());
-				ReadNextToken();
-				return node;
-			}
-
-            // Parenthesis?
-            if (fCurrentToken.Equals(TokenType.Symbol, "("))
-            {
-                // Skip '('
-                ReadNextToken();
-
-				if(fCurrentToken.Equals(TokenType.Word, "others"))
-				{
-					SkipOver(TokenType.Symbol, "'");
-					var node = new NodeNumber(fCurrentToken.IntValue());
-					SkipOver(TokenType.Symbol, ")");
-					return node;
-				}
-				else
-				{
-					// Parse a top-level expression
-                	var node = ParseAddSubtract();
-                
-
-                	// Check and skip ')'
-					if (!fCurrentToken.Equals(TokenType.Symbol, ")"))
-						throw new ParserException("Missing close parenthesis");
-					ReadNextToken();
-
-					// Return
-					return node;
-				}
-            }
-
-			//
-            if (fCurrentToken.Equals(TokenType.Symbol, "\""))
-            {
-                // Skip '"'
-                ReadNextToken(); //Read the number
-				
-				var node = new NodeNumber(fCurrentToken.IntValue());
-
-				ReadNextToken(); //Skip the number
-
-				// Check and skip ')'
-				if (!fCurrentToken.Equals(TokenType.Symbol, "\""))
-					throw new ParserException("Missing close asterisk");
-				ReadNextToken();
-
-				// Return
-				return node;
-				
-            }
-
-			if (fCurrentToken.Type == TokenType.Word)
-            {
-                // Parse a top-level expression
-				var name = fCurrentToken.Value;
-				ReadNextToken();
-
-				if (!fCurrentToken.Equals(TokenType.Symbol, "("))
-            	{
-					ConstantDeclaration result = ConstantList.Find(x => x.Identifier == name);
-					var node = new NodeNumber(result.Value);
-					return node;
-				}
-				else
-				{
-					// Function call
-                    // Skip parens
-                    ReadNextToken();
-
-                    // Parse arguments
-                    var arguments = new List<Node>();
-                    while (true)
-                    {
-                        // Parse argument and add to list
-                        arguments.Add(ParseAddSubtract());
-
-                        // Is there another argument?
-                        if (fCurrentToken.Equals(TokenType.Symbol, ","))
-                        {
-                            ReadNextToken();
-                            continue;
-                        }
-
-                        // Get out
-                        break;
-					}
-
-					// Check and skip ')'
-                    if (!fCurrentToken.Equals(TokenType.Symbol, ")"))
-                        throw new ParserException("Missing Closing Parenthesis");
-                    ReadNextToken();
-
-                    // Create the function call node
-                    return new NodeFunctionCall(name, arguments.ToArray());
-            	}
-			}
-			// Don't Understand
-			throw new ParserException("Expected ; and end of line");
-		}
-	
 		//---------------------------------------------------------------------------------------
 		//Subtype Indication parsing 27 - Apr - 2019
 
-		SubtypeIndication ParseSubtypeIndication()
-		{
+		SubtypeIndication ParseSubtypeIndication () {
 			//SubTypeIndication: [ resolution_function_name ] type_mark [ constraint ]
 			// $type($upper downto $lower) || $type range $lower to $upper
 			string type = fCurrentToken.Value;
-			ReadNextToken();
+			ReadNextToken ();
 			//Either type X downto Y
-			if(fCurrentToken.Equals(TokenType.Symbol, "("))
-			{
-				ReadNextToken(); //Skip parenthesis since its only opening parenthesis.
-				Node upper = ParseExpression();
-				SkipExpected(TokenType.Word, "downto");
-				Node lower = ParseExpression();
-				SubtypeIndication ParsedSubtype = new SubtypeIndication(type, upper, lower);
+			if (fCurrentToken.Equals (TokenType.Symbol, "(")) {
+				ReadNextToken (); //Skip parenthesis since its only opening parenthesis.
+				Node left = ParseExpression ();
+				SkipExpected (TokenType.Word, "downto");
+				Node right = ParseExpression ();
+				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left, right);
 
 				return ParsedSubtype;
 			}
 			//Else range Y to X
-			else
-			{
-				SkipExpected(TokenType.Word, "range");
-				Node lower = ParseExpression();
-				SkipExpected(TokenType.Word, "to");
-				Node upper = ParseExpression();
-				SubtypeIndication ParsedSubtype = new SubtypeIndication(type, upper, lower);
+			else {
+				SkipExpected (TokenType.Word, "range");
+				Node left = ParseExpression ();
+				SkipExpected (TokenType.Word, "to");
+				Node right = ParseExpression ();
+				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left, right);
 
 				return ParsedSubtype;
 			}
@@ -489,321 +267,568 @@ namespace VHDLparser
 
 		//---------------------------------------------------------------------------------------
 
-		PackageDeclaration ParsePackageDeclaration()
-		{
+		PackageDeclaration ParsePackageDeclaration () {
 
-			ReadNextToken(); // skip 'package'
-			CheckForUnexpectedEndOfSource();
+			ReadNextToken (); // skip 'package'
+			CheckForUnexpectedEndOfSource ();
 
 			if (fCurrentToken.Type != TokenType.Word)
-				throw new ParserException("Expected a module name.");
+				throw new ParserException ("Expected a module name.");
 
-			Variable packageName = new Variable(fCurrentToken.Value);
+			Variable packageName = new Variable (fCurrentToken.Value);
 
-			ReadNextToken();
-			SkipExpected(TokenType.Word, "is"); // skip 'is'
-	
+			ReadNextToken ();
+			SkipExpected (TokenType.Word, "is"); // skip 'is'
 
 			// PARSE GENERICS IF THERE ARE ANY
-			CheckForUnexpectedEndOfSource();
-			while (!fCurrentToken.Equals(TokenType.Word, "end"))
-			{
-			
-				if (ParseNextNode() == null)
-					throw new ParserException("Unexpected end of source.");	
-				
+			CheckForUnexpectedEndOfSource ();
+			while (!fCurrentToken.Equals (TokenType.Word, "end")) {
+
+				if (ParseNextNode () == null)
+					throw new ParserException ("Unexpected end of source.");
+
 			}
-			
-			ReadNextToken(); // skip 'end'
-			SkipExpected(TokenType.Word, packageName.Name); // skip end {moduleName}
-			SkipExpected(TokenType.Symbol, ";");
+
+			ReadNextToken (); // skip 'end'
+			SkipExpected (TokenType.Word, packageName.Name); // skip end {moduleName}
+			SkipExpected (TokenType.Symbol, ";");
 
 			parseComplete = true; //Trigger end of parsing.
 
-			ConstantList.ForEach(Console.WriteLine);
-			
-			foreach(ConstantDeclaration constant in ConstantList)
-			{
-				Console.WriteLine(constant.Identifier);
+			ConstantList.ForEach (Console.WriteLine);
+
+			foreach (ConstantDeclaration constant in ConstantList) {
+				Console.WriteLine (constant.Identifier);
 			}
 
-			return new PackageDeclaration(packageName);
+			return new PackageDeclaration (packageName);
 		}
 
-		ConstantDeclaration ParseConstantDeclaration()
-		{
-			ReadNextToken(); //skip constant
+		ConstantDeclaration ParseConstantDeclaration () {
+			ReadNextToken (); //skip constant
 
 			string identifier = fCurrentToken.Value;
 
-			ReadNextToken(); //skip identifier
-			SkipExpected(TokenType.Symbol, ":");
-			
+			ReadNextToken (); //skip identifier
+			SkipExpected (TokenType.Symbol, ":");
+
 			string subtypeIndication = fCurrentToken.Value;
-			ReadNextToken();
+			ReadNextToken ();
 
 			// In a package, a constant may be deferred. This means its value is defined in the package body. the value may be changed by re-analysing only the package body. we do not want this
-			if(!fCurrentToken.Equals(TokenType.Symbol, ":="))
-			{
-				throw new ParserException("Constants value definition must not be deferred to body");
+			if (!fCurrentToken.Equals (TokenType.Symbol, ":=")) {
+				throw new ParserException ("Constants value definition must not be deferred to body");
 			}
 
-			ReadNextToken();
-			Node result = ParseExpression();
-			ConstantDeclaration ParsedConstant = new ConstantDeclaration(identifier, subtypeIndication, result.Eval(ctx));
-			ConstantList.Add(ParsedConstant);
-			ReadNextToken();
+			ReadNextToken ();
+			Node result = ParseExpression ();
+			ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, result.Eval ());
+			ConstantList.Add (ParsedConstant);
+			ReadNextToken ();
 			return ParsedConstant;
 
 		}
 
-		SubtypeDeclaration ParseSubtypeDeclaration()
-		{
-			ReadNextToken(); //skip subtype
-			
+		SubtypeDeclaration ParseSubtypeDeclaration () {
+			ReadNextToken (); //skip subtype
+
 			string identifier = fCurrentToken.Value;
-			ReadNextToken(); //skip identifier
-			SkipExpected(TokenType.Word, "is");
+			ReadNextToken (); //skip identifier
+			SkipExpected (TokenType.Word, "is");
 
-			SubtypeIndication subtype = ParseSubtypeIndication();
-
+			SubtypeIndication subtype = ParseSubtypeIndication ();
 
 			//Read until end of line
-			SkipExpected(TokenType.Symbol, ";");
+			SkipExpected (TokenType.Symbol, ";");
 
-
-			SubtypeDeclaration ParsedSubtype = new SubtypeDeclaration(identifier, subtype);
-			SubtypeList.Add(ParsedSubtype);
+			SubtypeDeclaration ParsedSubtype = new SubtypeDeclaration (identifier, subtype);
+			SubtypeList.Add (ParsedSubtype);
 
 			return ParsedSubtype;
 		}
 
-		Declaration ParseTypeDeclaration()
-		{
-			
-			ReadNextToken(); //skip type
-		
+		Declaration ParseTypeDeclaration () {
+
+			ReadNextToken (); //skip type
+
 			string identifier = fCurrentToken.Value;
-			SkipOver(TokenType.Word, "is");
-	
-			if(fCurrentToken.Equals(TokenType.Word, "array"))
-			{
-				SkipOver(TokenType.Symbol, "(");
+			SkipOver (TokenType.Word, "is");
+
+			if (fCurrentToken.Equals (TokenType.Word, "array")) {
+				SkipOver (TokenType.Symbol, "(");
 				string from = fCurrentToken.Value;
-				SkipOver(TokenType.Word, "to");
+				SkipOver (TokenType.Word, "to");
 				string to = fCurrentToken.Value;
-				SkipOver(TokenType.Word, "of");
+				SkipOver (TokenType.Word, "of");
 				string subtypeIndication = fCurrentToken.Value;
-				SkipOver(TokenType.Symbol, ";");
-				ArrayTypeDeclaration ParsedArrayType = new ArrayTypeDeclaration(identifier, from, to, subtypeIndication);
-				ArrayTypeList.Add(ParsedArrayType);
-				return ParsedArrayType; 
-			}
-			else if (fCurrentToken.Equals(TokenType.Word, "record"))
-			{
-				
-				List<string> identifierList = new List<string>();
-				List<string> subtypeIndicationList = new List<string>();
+				SkipOver (TokenType.Symbol, ";");
+				ArrayTypeDeclaration ParsedArrayType = new ArrayTypeDeclaration (identifier, from, to, subtypeIndication);
+				ArrayTypeList.Add (ParsedArrayType);
+				return ParsedArrayType;
+			} else if (fCurrentToken.Equals (TokenType.Word, "record")) {
 
-				ReadNextToken(); //skip "record"
+				List<string> identifierList = new List<string> ();
+				List<string> subtypeIndicationList = new List<string> ();
 
-				CheckForUnexpectedEndOfSource();
+				ReadNextToken (); //skip "record"
 
-				while (!fCurrentToken.Equals(TokenType.Word, "end"))
-				{
-					identifierList.Add(fCurrentToken.Value);
-					SkipOver(TokenType.Symbol, ":");
-					subtypeIndicationList.Add(fCurrentToken.Value);
-					SkipOver(TokenType.Symbol, ";");
+				CheckForUnexpectedEndOfSource ();
+
+				while (!fCurrentToken.Equals (TokenType.Word, "end")) {
+					identifierList.Add (fCurrentToken.Value);
+					SkipOver (TokenType.Symbol, ":");
+					subtypeIndicationList.Add (fCurrentToken.Value);
+					SkipOver (TokenType.Symbol, ";");
 				}
 				//Skip Over: end record;
-				SkipOver(TokenType.Symbol, ";");
-				RecordTypeDeclaration ParsedRecordType = new RecordTypeDeclaration(identifier, identifierList, subtypeIndicationList);
-				RecordTypeList.Add(ParsedRecordType);
+				SkipOver (TokenType.Symbol, ";");
+				RecordTypeDeclaration ParsedRecordType = new RecordTypeDeclaration (identifier, identifierList, subtypeIndicationList);
+				RecordTypeList.Add (ParsedRecordType);
 				return ParsedRecordType;
-			}
-			else
-			{
-		
-				List<string> enumerationList = new List<string>();
-				SkipOver(TokenType.Symbol, "(");
-				
-				while (!fCurrentToken.Equals(TokenType.Symbol, ";"))
-				{
-					enumerationList.Add(fCurrentToken.Value);
+			} else {
+
+				List<string> enumerationList = new List<string> ();
+				SkipOver (TokenType.Symbol, "(");
+
+				while (!fCurrentToken.Equals (TokenType.Symbol, ";")) {
+					enumerationList.Add (fCurrentToken.Value);
 					//Can't use skip over "," since no "," after last entry
-					ReadNextToken();
-					ReadNextToken();
+					ReadNextToken ();
+					ReadNextToken ();
 				}
 
-				ReadNextToken();
-				EnumerationTypeDeclaration ParsedEnumerationType = new EnumerationTypeDeclaration(identifier, enumerationList);
-				EnumerationTypeList.Add(ParsedEnumerationType);
+				ReadNextToken ();
+				EnumerationTypeDeclaration ParsedEnumerationType = new EnumerationTypeDeclaration (identifier, enumerationList);
+				EnumerationTypeList.Add (ParsedEnumerationType);
 				return ParsedEnumerationType;
 			}
 		}
 
-		UseClause ParseFunctionDeclaration()
-		{
-			ReadNextToken(); //skip function
+		// NEED TO FIX
+		UseClause ParseFunctionDeclaration () {
+			ReadNextToken (); //skip function
 
 			Token lName = fCurrentToken;
-			ReadNextToken(); //Skip the function name
-			SkipExpected(TokenType.Symbol, "(");
+			ReadNextToken (); //Skip the function name
+			SkipExpected (TokenType.Symbol, "(");
 
 			//Waiting for the bracket to be closed again.
 			//This is because function declarations can contain ';'.
-			while (!fCurrentToken.Equals(TokenType.Symbol, ")")) 
-			{
-				ReadNextToken();
+			while (!fCurrentToken.Equals (TokenType.Symbol, ")")) {
+			ReadNextToken ();
 			}
 			//Waiting for the end of line.
-			while (!fCurrentToken.Equals(TokenType.Symbol, ";")) 
-			{
-				ReadNextToken();
+			while (!fCurrentToken.Equals (TokenType.Symbol, ";")) {
+				ReadNextToken ();
 			}
 
-			ReadNextToken(); // skip ;
-			
+			ReadNextToken (); // skip ;
 
-			return new UseClause(lName, lName);
+			return new UseClause (lName.Value, lName.Value);
 		}
 
-		EntityDeclaration ParseEntityDeclaration()
-		{
+		EntityDeclaration ParseEntityDeclaration () {
 
 			// entity-Clause:
 			//		entity {name} is 
 			//      	generic(
-		    //             {gen_name}  : {type} := {value}
+			//             {gen_name}  : {type} := {value}
 			//          );
 			//		    port (
-		    //	           {variable}	: {in/out} {type};
-		    //          );
+			//	           {variable}	: {in/out} {type};
+			//          );
 			//          end {name};
-			
 
-			ReadNextToken(); // skip 'entity'
-			CheckForUnexpectedEndOfSource();
+			ReadNextToken (); // skip 'entity'
+			CheckForUnexpectedEndOfSource ();
 
 			if (fCurrentToken.Type != TokenType.Word)
-				throw new ParserException("Expected a module name.");
+				throw new ParserException ("Expected a module name.");
 
-			Variable moduleName = new Variable(fCurrentToken.Value);
+			Variable moduleName = new Variable (fCurrentToken.Value);
 
-			ReadNextToken();
-			SkipExpected(TokenType.Word, "is"); // skip 'is'
+			ReadNextToken ();
+			SkipExpected (TokenType.Word, "is"); // skip 'is'
 
 			// PARSE GENERICS IF THERE ARE ANY
-			List<ParserNode> lParserNodes = new List<ParserNode>();
+			List<ParserNode> lParserNodes = new List<ParserNode> ();
 			ParserNode lParserNode;
-			CheckForUnexpectedEndOfSource();
-			while (!fCurrentToken.Equals(TokenType.Word, "end"))
-			{
-				if ((lParserNode = ParseNextNode()) != null)
-					lParserNodes.Add(lParserNode);
-				else throw new ParserException("Unexpected end of source.");
+			CheckForUnexpectedEndOfSource ();
+			while (!fCurrentToken.Equals (TokenType.Word, "end")) {
+				if ((lParserNode = ParseNextNode ()) != null)
+					lParserNodes.Add (lParserNode);
+				else throw new ParserException ("Unexpected end of source.");
 			}
-	
-			ReadNextToken(); // skip 'end'
-			SkipExpected(TokenType.Word, moduleName.Name); // skip end {moduleName}
-			SkipExpected(TokenType.Symbol, ";");
+
+			ReadNextToken (); // skip 'end'
+			SkipExpected (TokenType.Word, moduleName.Name); // skip end {moduleName}
+			SkipExpected (TokenType.Symbol, ";");
 
 			parseComplete = true;
 
-			return new EntityDeclaration(moduleName, new ParserNodeCollection(lParserNodes));
+			return new EntityDeclaration (moduleName, new ParserNodeCollection (lParserNodes));
 		}
 
-		GenericClause ParseGenericClause()
-		{
-			ReadNextToken(); // skip 'port'
-			ReadNextToken(); // skip '('
-			List<InterfaceElement> lInterfaceElements = new List<InterfaceElement>();
+		GenericClause ParseGenericClause () {
+			ReadNextToken (); // skip 'port'
+			ReadNextToken (); // skip '('
+			List<InterfaceElement> lInterfaceElements = new List<InterfaceElement> ();
 			InterfaceElement lInterfaceElement;
-			CheckForUnexpectedEndOfSource();
-			while (!fCurrentToken.Equals(TokenType.Symbol, ")"))
-			{
-				if ((lInterfaceElement = ParseGenericInterfaceElement()) != null)
-					lInterfaceElements.Add(lInterfaceElement);
-				else throw new ParserException("Unexpected end of source.");
+			CheckForUnexpectedEndOfSource ();
+			while (!fCurrentToken.Equals (TokenType.Symbol, ")")) {
+				if ((lInterfaceElement = ParseGenericInterfaceElement ()) != null)
+					lInterfaceElements.Add (lInterfaceElement);
+				else throw new ParserException ("Unexpected end of source.");
 			}
 
-			ReadNextToken(); // skip ')'
-			ReadNextToken(); // skip ';'
+			ReadNextToken (); // skip ')'
+			ReadNextToken (); // skip ';'
 
-			InterfaceList GenericList = new InterfaceList(lInterfaceElements);
-		
-			return new GenericClause(GenericList);
+			InterfaceList GenericList = new InterfaceList (lInterfaceElements);
+
+			return new GenericClause (GenericList);
 		}
 
-		GenericInterfaceElement ParseGenericInterfaceElement()
-		{
-			
+		GenericInterfaceElement ParseGenericInterfaceElement () {
+
 			string genericName = fCurrentToken.Value;
 
-			ReadNextToken();
-			SkipExpected(TokenType.Symbol, ":");
-			
+			ReadNextToken ();
+			SkipExpected (TokenType.Symbol, ":");
 
 			string type = fCurrentToken.Value;
 
-			ReadNextToken();
-			SkipExpected(TokenType.Symbol, ":=");
+			ReadNextToken ();
+			SkipExpected (TokenType.Symbol, ":=");
 
 			string value = fCurrentToken.Value;
 
-			ReadNextToken(); // skip VALUE
+			ReadNextToken (); // skip VALUE
 
-			if(fCurrentToken.Equals(TokenType.Symbol, ";"))
-				ReadNextToken(); // skip ';'
+			if (fCurrentToken.Equals (TokenType.Symbol, ";"))
+				ReadNextToken (); // skip ';'
 
-			return new GenericInterfaceElement(genericName, type, value);
+			return new GenericInterfaceElement (genericName, type, value);
 		}
 
+		PortClause ParsePortClause () {
 
-		PortClause ParsePortClause()
-		{
-			
-
-			ReadNextToken(); // skip 'port'
-			ReadNextToken(); // skip '('
-			List<InterfaceElement> lInterfaceElements = new List<InterfaceElement>();
+			ReadNextToken (); // skip 'port'
+			ReadNextToken (); // skip '('
+			List<InterfaceElement> lInterfaceElements = new List<InterfaceElement> ();
 			InterfaceElement lInterfaceElement;
-			CheckForUnexpectedEndOfSource();
-			while (!fCurrentToken.Equals(TokenType.Symbol, ")"))
-			{
-				if ((lInterfaceElement = ParsePortInterfaceElement()) != null)
-					lInterfaceElements.Add(lInterfaceElement);
-				else throw new ParserException("Unexpected end of source.");
+			CheckForUnexpectedEndOfSource ();
+			while (!fCurrentToken.Equals (TokenType.Symbol, ")")) {
+				if ((lInterfaceElement = ParsePortInterfaceElement ()) != null)
+					lInterfaceElements.Add (lInterfaceElement);
+				else throw new ParserException ("Unexpected end of source.");
 			}
 
-			ReadNextToken(); // skip ')'
-			ReadNextToken(); // skip ';'
+			ReadNextToken (); // skip ')'
+			ReadNextToken (); // skip ';'
 
-			return new PortClause(new InterfaceList(lInterfaceElements));
+			return new PortClause (new InterfaceList (lInterfaceElements));
 		}
 
-		PortInterfaceElement ParsePortInterfaceElement()
-		{
-			
+		PortInterfaceElement ParsePortInterfaceElement () {
+
 			string signalName = fCurrentToken.Value;
 
-			ReadNextToken();
-			SkipExpected(TokenType.Symbol, ":");
-			
+			ReadNextToken ();
+			SkipExpected (TokenType.Symbol, ":");
 
 			string inOut = fCurrentToken.Value;
 
-			ReadNextToken();
-			
+			ReadNextToken ();
+
 			string type = fCurrentToken.Value;
 
-			ReadNextToken(); // skip TYPE
-			if(fCurrentToken.Equals(TokenType.Symbol, ";"))
-				ReadNextToken(); // skip ';'
-			
-			return new PortInterfaceElement(signalName, inOut, type);
+			ReadNextToken (); // skip TYPE
+			if (fCurrentToken.Equals (TokenType.Symbol, ";"))
+				ReadNextToken (); // skip ';'
+
+			return new PortInterfaceElement (signalName, inOut, type);
 		}
 
+		//----------------------------------------------------------------------------------------
+		//                                   Expression Parsing
+		//
+		// The following methods are required for expression parsing. Expressions appear in both
+		// constant declarations and value definitions for types and subtypes. Anywhere where
+		// the user may put a value in VHDL, they can instead describe that value as an 
+		// expression. Expressions require a different pasing approach since they do not follow
+		// the left to right structure of other nodes such as clauses and type declarations. 
+		// Instead expressions have a prioritized order of execution. Operations are not computed
+		// from left to right but instead obeying this priority.
+
+		// ParseExpression is the first method called when an expression requires parsing.
+		// This method initializes the parsing and returns the computed expression value.
+		Node ParseExpression () 
+		{
+			// Addition and subtraction are the operations with the least priority, therefore
+			// process of parsing and expression is commenced with those operations.
+			var expr = ParseAddSubtract ();
+			// The closing parenthesis is skipped if it is present at the end of an expression.
+			// This may occur in instances such as an array of expression. 
+			SkipIfPresent (TokenType.Symbol, ")");
+			// Check if the entire expression until the end of line or a reserved word has been parsed
+			// Expressions may be separated either by a line termination or a reserved word.
+			if (!(fCurrentToken.Equals (TokenType.Symbol, ";") || ReservedWords.IsReservedWord (fCurrentToken.Value)))
+				throw new ParserException ("Expected ; and end of line");
+
+			return expr;
+
+		}
+
+		// ParseAddSubtract is the least prioritized and thererfore called first.
+		Node ParseAddSubtract () 
+		{
+			// The lefthand side of the operation is parsed with the next higher prioritized operation.
+			// Multiplication and division is a priority level above addition and subtraction.
+			var lhs = ParseMultiplyDivide ();
+			// The while loop below contiues infinitely until no more operations are to be parsed.
+			while (true) 
+			{
+				// The operation (add/sub) is determined by the symbol.
+				Func<int, int, int> op = null;
+				if (fCurrentToken.Equals (TokenType.Symbol, "+")) 
+				{
+					op = (a, b) => a + b;
+				} else if (fCurrentToken.Equals (TokenType.Symbol, "-")) 
+				{
+					op = (a, b) => a - b;
+				}
+
+				// If there are no further operations the lefthand side is returned.
+				if (op == null)
+					return lhs;
+
+				// The operator is skipped.
+				ReadNextToken ();
+				// Now the righthand side of the operation is parsed for the operation of the higher priority level.
+				var rhs = ParseMultiplyDivide ();
+
+				// The lefthand side value is updated with the computed operation value.
+				lhs = new NodeBinary (lhs, rhs, op);
+			}
+		}
+
+		// ParseMultiplyDivide is of the next level of priority.
+		// The general structure of this method is the same as for addition and subtraction,
+		// except the method now calls the next priority level above which are exponents.
+		Node ParseMultiplyDivide () 
+		{
+			var lhs = ParseExponent ();
+
+			while (true) 
+			{
+				Func<int, int, int> op = null;
+				if (fCurrentToken.Equals (TokenType.Symbol, "*")) 
+				{
+					op = (a, b) => a * b;
+				} 
+				else if (fCurrentToken.Equals (TokenType.Symbol, "/")) 
+				{
+					op = (a, b) => a / b;
+				}
+
+				if (op == null)
+					return lhs; 
+
+				ReadNextToken ();
+
+				// The righthandside is now parsed of any exponents.
+				var rhs = ParseExponent ();
+
+				lhs = new NodeBinary (lhs, rhs, op);
+			}
+		}
+
+		// ParseExponent is of the next level of priority above ParseMultiplyDivide.
+		Node ParseExponent () 
+		{
+			var lhs = ParseUnary ();
+
+			while (true) 
+			{
+				Func<int, int, int> op = null;
+				if (fCurrentToken.Equals (TokenType.Symbol, "**")) 
+				{
+					op = (a, b) => (int) Math.Pow (a, b);
+				}
+
+				if (op == null)
+					return lhs; 
+
+				ReadNextToken ();
+
+				var rhs = ParseUnary ();
+
+				lhs = new NodeBinary (lhs, rhs, op);
+			}
+		}
+
+		// Unary operations are the operation with the highest priority.
+		// These must be computed before any other operations. 
+		// Unary operations are when values are first negated or made positive.
+		Node ParseUnary () 
+		{
+			// If values are preceded by a '+' we do not change the value.
+			// Therefore the token is skipped and parse unary is called again.
+			if (fCurrentToken.Equals (TokenType.Symbol, "+")) 
+			{
+				ReadNextToken ();
+				return ParseUnary ();
+			}
+			// If values are preceded by a '-' we negate the value.
+			if (fCurrentToken.Equals (TokenType.Symbol, "-")) 
+			{
+				ReadNextToken ();
+
+				var rhs = ParseUnary ();
+
+				return new NodeUnary (rhs, (a) => -a);
+			}
+
+			// At this stage we have parsed for all operations and therefore only need
+			// to extract the values to be used in these operations. This is done using
+			// ParseLeaf.
+			return ParseLeaf ();
+		}
+
+		Node ParseLeaf () 
+		{
+
+			if (fCurrentToken.Type == TokenType.Integer) 
+			{
+				var node = new NodeNumber (fCurrentToken.IntValue ());
+				ReadNextToken ();
+				return node;
+			}
+
+			// Parenthesis?
+			if (fCurrentToken.Equals (TokenType.Symbol, "(")) 
+			{
+				// Skip '('
+				ReadNextToken ();
+
+				if (fCurrentToken.Equals (TokenType.Word, "others")) 
+				{
+					SkipOver (TokenType.Symbol, "'");
+					var node = new NodeNumber (fCurrentToken.IntValue ());
+					SkipOver (TokenType.Symbol, ")");
+					return node;
+				} 
+				else 
+				{
+					// Parse a top-level expression
+
+					var arguments = new List<Node> ();
+					while (true) 
+					{
+						// Parse argument and add to list
+						arguments.Add (ParseAddSubtract ());
+
+						// Is there another argument?
+						if (fCurrentToken.Equals (TokenType.Symbol, ",")) 
+						{
+							ReadNextToken ();
+							continue;
+						}
+
+						// Get out
+						break;
+					}
+
+					// Check and skip ')'
+					if (!fCurrentToken.Equals (TokenType.Symbol, ")"))
+						throw new ParserException ("Missing close parenthesis");
+					ReadNextToken ();
+
+					// Return
+					return new NodeArray (arguments.ToArray ());
+				}
+			}
+
+			//
+			if (fCurrentToken.Equals (TokenType.Symbol, "\"")  || fCurrentToken.Equals (TokenType.Symbol, "\'")) 
+			{
+				// Skip '"'
+				ReadNextToken (); //Read the number
+
+				var node = new NodeNumber (fCurrentToken.IntValue ());
+
+				ReadNextToken (); //Skip the number
+
+				// Check and skip ')'
+				if (!(fCurrentToken.Equals (TokenType.Symbol, "\"") || fCurrentToken.Equals (TokenType.Symbol, "\'")))
+					throw new ParserException ("Missing close asterisk");
+				ReadNextToken ();
+
+				// Return
+				return node;
+
+			}
+
+			if (fCurrentToken.Type == TokenType.Word) 
+			{
+				// Parse a top-level expression
+				var name = fCurrentToken.Value;
+				ReadNextToken ();
+				if (fCurrentToken.Equals (TokenType.Symbol, "\'")) 
+				{
+					//Type Attribute has been requested
+					ReadNextToken ();
+					var attribute = DetermineAttribute (fCurrentToken.Value, name);
+					var node = new NodeNumber (attribute);
+					ReadNextToken (); //Skip the found attribute
+					return node;
+
+				} 
+				else if (!fCurrentToken.Equals (TokenType.Symbol, "(")) 
+				{
+					ConstantDeclaration result = ConstantList.Find (x => x.Identifier == name);
+					var node = new NodeNumber (result.Value);
+					return node;
+
+				} 
+				else 
+				{
+					// Function call
+					// Skip parens
+					ReadNextToken ();
+
+					// Parse arguments
+					var arguments = new List<Node> ();
+					while (true) 
+					{
+						// Parse argument and add to list
+						arguments.Add (ParseAddSubtract ());
+
+						// Is there another argument?
+						if (fCurrentToken.Equals (TokenType.Symbol, ",")) 
+						{
+							ReadNextToken ();
+							continue;
+						}
+
+						// Get out
+						break;
+					}
+					// Check and skip ')'
+					if (!fCurrentToken.Equals (TokenType.Symbol, ")"))
+						throw new ParserException ("Missing Closing Parenthesis");
+
+					ReadNextToken ();
+
+					// Create the function call node
+					return new NodeFunctionCall (name, arguments.ToArray ());
+				}
+			}
+			// Don't Understand
+			throw new ParserException ("Expected ; and end of line");
+		}
 	}
 }
+
+

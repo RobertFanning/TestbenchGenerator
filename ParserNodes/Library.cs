@@ -21,5 +21,17 @@ namespace VHDLparser.ParserNodes
         {
             return (width + height) * 2;
         }
+
+        public int to_sfixed(int first, int second, int third)
+        {
+            return first;
+        }
+
+        //Only takes 2 inputs
+        public int to_unsigned(int first, int second)
+        {
+            return first;
+        }
+        
     }
 }

@@ -8,12 +8,12 @@ namespace VHDLparser.ParserNodes
 {
     public class ReflectionContext : IContext
     {
-        public ReflectionContext(object targetObject)
+        public ReflectionContext()
         {
-            _targetObject = targetObject;
+            _targetObject = new MyLibrary();
         }
 
-        object _targetObject;
+        MyLibrary _targetObject;
 
         public int CallFunction(string name, int[] arguments)
         {

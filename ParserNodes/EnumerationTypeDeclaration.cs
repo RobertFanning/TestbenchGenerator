@@ -13,12 +13,19 @@ namespace VHDLparser.ParserNodes
 
 
 			fIdentifier = identifier;
+			fEnumerationList = enumerationList;
 
 		}
 
 		readonly string fIdentifier;
+
+		readonly List<string> fEnumerationList;
 	
 		public string Identifier { get { return fIdentifier; } }
+
+		public int Left { get { return (fEnumerationList.Count-1); } }
+
+		public int Right { get { return '0'; } }
 
 	}
 }

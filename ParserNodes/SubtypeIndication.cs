@@ -7,26 +7,26 @@ namespace VHDLparser.ParserNodes
 	
 	public class SubtypeIndication : Declaration
 	{
-		public SubtypeIndication(string type, Node upper, Node lower)
+		public SubtypeIndication(string type, Node left, Node right)
 		{
 			if (type == null) throw new ArgumentNullException("indentifier");
 
 			fType = type;
-			fUpper = upper;
-			fLower = lower;
+			fleft = left;
+			fright = right;
 		}
 
 		readonly string fType;
 	
 		public string Type { get { return fType; } }
 
-		readonly Node fUpper;
+		readonly Node fleft;
 
-		public Node Upper { get { return fUpper; } }
+		public int Left { get { return fleft.Eval(); } }
 	
 		
-		readonly Node fLower;
+		readonly Node fright;
 
-		public Node Lower { get { return fLower; } }
+		public int Right { get { return fright.Eval(); } }
 	}
 }

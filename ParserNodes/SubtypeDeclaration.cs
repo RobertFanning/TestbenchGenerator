@@ -22,5 +22,9 @@ namespace VHDLparser.ParserNodes
 		readonly SubtypeIndication fSubtype;
 
 		public SubtypeIndication Subtype { get { return fSubtype; } }
+
+		public int Right { get { return fSubtype.Right; } }
+
+		public int Left { get { return fSubtype.Left; } }
 	}
 }
