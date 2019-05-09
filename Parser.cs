@@ -16,13 +16,17 @@ namespace VHDLparser
 		Tokenizer fTokenizer; 
 		// Current token created to store the current token that has been read.
 		Token fCurrentToken;
-		// parseComplete is a bool trigger to determine when parsing is finished.
-		bool parseComplete;
 		// lib of type MyLibrary contains the operations of all possible predefined VHDL functions.
 		MyLibrary lib;
+
+		PortClause fPortmap;
+		public PortClause Portmap { get { return fPortmap; } }
+
 		// Below are a series of lists for storing declarations parsed from a package that may need to be referenced later.
 		// ConstantList, is a list of constant declarations.
 		List<ConstantDeclaration> ConstantList;
+		public List<ConstantDeclaration> FetchConstant { get { return ConstantList; } }
+
 		// SubtypeList, is a list of subtype declarations.
 		List<SubtypeDeclaration> SubtypeList;
 		// There are multiple versions of type declarations each using different definition structures, therefore requiring separated classes and lists.
@@ -41,7 +45,7 @@ namespace VHDLparser
 
 			fTokenizer = new Tokenizer (source);
 
-			parseComplete = false;
+			fPortmap = new PortClause(null);
 
 			lib = new MyLibrary ();
 
@@ -154,7 +158,7 @@ namespace VHDLparser
 		public ParserNode ParseNextNode () 
 		{
 
-			if (AtEndOfSource || parseComplete)
+			if (AtEndOfSource)
 				return null;
 
 			// all the Clauses start with a word
@@ -293,10 +297,9 @@ namespace VHDLparser
 			SkipExpected (TokenType.Word, packageName.Name); // skip end {moduleName}
 			SkipExpected (TokenType.Symbol, ";");
 
-			parseComplete = true; //Trigger end of parsing.
-
 			ConstantList.ForEach (Console.WriteLine);
-
+			// Package has been parsed, now the next file can be parsed
+			SkipOver(TokenType.Word, "EndOfFileIdentifier");
 			foreach (ConstantDeclaration constant in ConstantList) {
 				Console.WriteLine (constant.Identifier);
 			}
@@ -464,7 +467,8 @@ namespace VHDLparser
 			SkipExpected (TokenType.Word, moduleName.Name); // skip end {moduleName}
 			SkipExpected (TokenType.Symbol, ";");
 
-			parseComplete = true;
+			// Package has been parsed, now the next file can be parsed
+			SkipOver(TokenType.Word, "EndOfFileIdentifier");
 
 			return new EntityDeclaration (moduleName, new ParserNodeCollection (lParserNodes));
 		}
@@ -515,19 +519,21 @@ namespace VHDLparser
 
 			ReadNextToken (); // skip 'port'
 			ReadNextToken (); // skip '('
-			List<InterfaceElement> lInterfaceElements = new List<InterfaceElement> ();
-			InterfaceElement lInterfaceElement;
+			List<PortInterfaceElement> lPortInterfaceElements = new List<PortInterfaceElement> ();
+			PortInterfaceElement lPortInterfaceElement; 
 			CheckForUnexpectedEndOfSource ();
 			while (!fCurrentToken.Equals (TokenType.Symbol, ")")) {
-				if ((lInterfaceElement = ParsePortInterfaceElement ()) != null)
-					lInterfaceElements.Add (lInterfaceElement);
+				if ((lPortInterfaceElement = ParsePortInterfaceElement ()) != null)
+					lPortInterfaceElements.Add (lPortInterfaceElement);
 				else throw new ParserException ("Unexpected end of source.");
 			}
 
 			ReadNextToken (); // skip ')'
 			ReadNextToken (); // skip ';'
 
-			return new PortClause (new InterfaceList (lInterfaceElements));
+			fPortmap = new PortClause (lPortInterfaceElements);
+
+			return fPortmap;
 		}
 
 		PortInterfaceElement ParsePortInterfaceElement () {
@@ -696,9 +702,13 @@ namespace VHDLparser
 			return ParseLeaf ();
 		}
 
+		// ParseLeaf is the lowest level of the expression parsers.
+		// It is used to extract the fundamental elements of an expression.
+		// These elements are numbers, function calls and arrays.
 		Node ParseLeaf () 
 		{
-
+			// NodeNumber:
+			// If current token is a number we simply extract it as a NodeNumber.
 			if (fCurrentToken.Type == TokenType.Integer) 
 			{
 				var node = new NodeNumber (fCurrentToken.IntValue ());
@@ -706,12 +716,17 @@ namespace VHDLparser
 				return node;
 			}
 
-			// Parenthesis?
+			// Parenthesis:
+			// If an open parenthesis is read, it must be skipped and the expression
+			// it encloses must be parsed. We must also check again at the end of the
+			// expression if the parenthesis is correctly closed otherwise an exception
+			// is thrown.		
 			if (fCurrentToken.Equals (TokenType.Symbol, "(")) 
 			{
 				// Skip '('
 				ReadNextToken ();
 
+				// Check for "others" statement that is commonly used in VHDL.
 				if (fCurrentToken.Equals (TokenType.Word, "others")) 
 				{
 					SkipOver (TokenType.Symbol, "'");
@@ -719,10 +734,10 @@ namespace VHDLparser
 					SkipOver (TokenType.Symbol, ")");
 					return node;
 				} 
+				// Else we have an expression inside of parenthesis. 
 				else 
 				{
 					// Parse a top-level expression
-
 					var arguments = new List<Node> ();
 					while (true) 
 					{
@@ -750,7 +765,9 @@ namespace VHDLparser
 				}
 			}
 
-			//
+			// Single/Double Quote Literals:
+			// In vhdl we can have single digit values enclosed in signle quote literals and longer values
+			// enclosed in double quote literals. We must therefore extract the number from within these quotation literals. 
 			if (fCurrentToken.Equals (TokenType.Symbol, "\"")  || fCurrentToken.Equals (TokenType.Symbol, "\'")) 
 			{
 				// Skip '"'
@@ -762,7 +779,7 @@ namespace VHDLparser
 
 				// Check and skip ')'
 				if (!(fCurrentToken.Equals (TokenType.Symbol, "\"") || fCurrentToken.Equals (TokenType.Symbol, "\'")))
-					throw new ParserException ("Missing close asterisk");
+					throw new ParserException ("Missing closing quote literals");
 				ReadNextToken ();
 
 				// Return

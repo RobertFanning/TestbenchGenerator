@@ -10,36 +10,39 @@ namespace VHDLparser
         {
             
             Console.WriteLine("The current time is " + DateTime.Now);
-            string text = File.ReadAllText(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ExpressionTest.vhd");
+            string contents = null;
+            foreach (string file in Directory.EnumerateFiles(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ParserFiles\", "*.vhd"))
+            {
+                contents += File.ReadAllText(file);
+                contents += " EndOfFileIdentifier ";
+            }
 
-            StringReader lSource = new StringReader(text);
-	
-			
+
+
+            StringReader lSource = new StringReader(contents);
+				
             //PARSER
             Parser lParser = new Parser(lSource);
 			ParserNode lClause = lParser.ParseNextNode();
 			while (lClause != null)
 			{
-				//Console.WriteLine("The type of token is: " + lToken.Type + ", and it's value is: " + lToken.Value);
+				
    				lClause = lParser.ParseNextNode();
                 Console.WriteLine(lClause);
 			}
 
-            //lParser.ConstantList.ForEach(Console.WriteLine);
+            
+            Console.WriteLine("Accessing list item: " + lParser.Portmap.Expressions[0].Name);
+
+            string TemplateIn = @"C:\Users\rtfa\Documents\Templates\tmpl_uvm_module_testbench\";
+            string TemplateOut = @"C:\Users\rtfa\Documents\TestbenchGeneratorOutput\";
+
+
+            TestbenchGenerator lTestbenchGenerator = new TestbenchGenerator(lParser, TemplateIn, TemplateOut);
+
 
             Console.WriteLine("GAME OVER");
-            //TOKENIZER 
-            //Tokenizer lTokenizer = new Tokenizer(lSource);
-			//Token lToken = lTokenizer.ReadNextToken();
-			//while (lToken != null)
-			//	{
-			//		//ListBoxTokens.Items.Add(lToken.Type.ToString() + ":\t" + lToken.Value);
-            //        Console.WriteLine("The type of token is: " + lToken.Type + ", and it's value is: " + lToken.Value);
-            //        lToken = lTokenizer.ReadNextToken();
-			//	}
-			
+
 		}
-			
-        
     }
 }

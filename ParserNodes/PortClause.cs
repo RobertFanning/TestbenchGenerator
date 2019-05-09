@@ -7,16 +7,16 @@ namespace VHDLparser.ParserNodes
 	/// <summary>Represents a for-loop.</summary>
 	public class PortClause : Clause
 	{
-		public PortClause(InterfaceList portExpressions)
+		public PortClause(List<PortInterfaceElement> portExpressions)
 		{
-			if (portExpressions == null) throw new ArgumentNullException("portExpressions");
+			//if (portExpressions == null) throw new ArgumentNullException("portExpressions");
 			fExpressions = portExpressions;
 		}
 
-		readonly InterfaceList fExpressions;
+		readonly List<PortInterfaceElement> fExpressions;
 		/// <summary>Gets the block that is executed when the condition evaluates to true.</summary>
 		/// <value>The block that is executed when the condition evaluates to true.</value>
-		public InterfaceList Expressions { get { return fExpressions; } }
+		public List<PortInterfaceElement> Expressions { get { return fExpressions; } }
 
 	}
 }

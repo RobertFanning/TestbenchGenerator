@@ -135,6 +135,7 @@ namespace VHDLparser {
 				case '(':
 				case ')':
 				case '"':
+				case '&':
 				case ';':
 				case '.':
 				case ',':
