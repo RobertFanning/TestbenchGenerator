@@ -29,8 +29,10 @@ namespace VHDLparser
 				
    				lClause = lParser.ParseNextNode();
                 Console.WriteLine(lClause);
-			}
+                Console.WriteLine("Jockee");
 
+			}
+            
             
             Console.WriteLine("Accessing list item: " + lParser.Portmap.Expressions[0].Name);
 

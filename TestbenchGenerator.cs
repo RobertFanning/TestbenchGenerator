@@ -17,7 +17,8 @@ namespace VHDLparser
 			OutputPath = Testbench;
 
 			VerifyTemplates();
-
+			DuplicateTemplates();
+			GenerateBif();
 
 		}
 
@@ -30,23 +31,50 @@ namespace VHDLparser
 			if (!File.Exists(TemplatePath + "template_bif.sv")) throw new ParserException ("Template for bif.sv missing");
 		}
 
+		void DuplicateTemplates()
+		{
+			foreach (string file in Directory.EnumerateFiles(TemplatePath, "*.sv"))
+			{
+   				File.Copy(file, OutputPath + Path.GetFileName(file), true);
+			}
+		}
+
 		void GenerateBif()
 		{
-			StringReader bifTemplate = new StringReader(TemplatePath + "template_bif.sv");
-			Tokenizer bifTokenizer = new Tokenizer (bifTemplate);
-
-
-		}
-
-		void SkipOver (TokenType type, string value) 
-		{
-		
-			while (!bifTokenizer.ReadNextToken ().Equals (type, value)) 
-			{
-
+			string line = "";
+			string lineBuilder = "";
+			StringBuilder sbText = new StringBuilder();
+			using (var reader = new System.IO.StreamReader(OutputPath + "template_bif.sv")) {
+				while ((line = reader.ReadLine()) != null) 
+				{
+					if (line.Contains("InsertionPoint_Portmap")) 
+					{
+						//INSERT PORTMAP
+						foreach (PortInterfaceElement element in Source.Portmap.Expressions)
+						{
+							switch (element.InOut){
+								case "in": 
+									lineBuilder += "input";
+									break;
+								case "out":
+									lineBuilder += "output";
+									break;
+							}
+							sbText.AppendLine(lineBuilder + " " + element.Name);
+							lineBuilder = "";
+						}
+					}else 
+					{
+						sbText.AppendLine(line);
+					}
+				}
 			}
-			bifTokenizer.ReadNextToken (); //Skip specified token
+			using(var writer = new System.IO.StreamWriter(OutputPath + "template_bif.sv")) {
+    		writer.Write(sbText.ToString());
+			}	
+
 		}
+
 	}
 }
 

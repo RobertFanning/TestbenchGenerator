@@ -9,6 +9,8 @@ namespace VHDLparser {
 	public class Tokenizer {
 		// Input source to be parsed.
 		TextReader fSource;
+		// Current token created to store the current token that has been read.
+		Token fCurrentToken;
 		// Current Character being processed by tokenizer.
 		char fCurrentChar;
 		// Buffer for building the value of a token when multiple characters required.
@@ -21,7 +23,16 @@ namespace VHDLparser {
 
 			fSource = source;
 			fTokenValueBuffer = new StringBuilder ();
+			fCurrentToken = null;
 
+			// First character is read.
+			ReadNextChar ();
+		}
+
+		public void UpdateSource (TextReader source) {
+			if (source == null) throw new ArgumentNullException ("source");
+
+			fSource = source;
 			// First character is read.
 			ReadNextChar ();
 		}
@@ -83,14 +94,22 @@ namespace VHDLparser {
 
 			// if the first character is a letter, the token is a word
 			if (char.IsLetter (fCurrentChar))
-				return ReadWord ();
-
+			{
+				fCurrentToken = ReadWord ();
+			}
 			// if the first character is a digit, the token is an integer constant
-			if (char.IsDigit (fCurrentChar))
-				return ReadIntegerConstant ();
-
+			else if (char.IsDigit (fCurrentChar))
+			{
+				fCurrentToken = ReadIntegerConstant ();
+			}
 			// in all other cases, the token should be a symbol
-			return ReadSymbol ();
+			else
+			{
+				fCurrentToken = ReadSymbol ();
+			}
+
+			return fCurrentToken;
+			
 		}
 
 		// Method for extracting each character until the end of the word has ben reached.
@@ -184,8 +203,48 @@ namespace VHDLparser {
 					ThrowInvalidCharException ();
 					break;
 			}
+			
 
 			return null;
 		}
+
+	
+
+		// Skips the current token if it is the specified token, or throws a "ParserException"
+		// "type" is the type of token to expect, "value" is the value of the token to expect.
+		public Token SkipExpected (TokenType type, string value) 
+		{
+			CheckForUnexpectedEndOfSource ();
+			if (!fCurrentToken.Equals (type, value))
+				throw new ParserException ("Expected '" + value + "'. But instead got '" + fCurrentToken.Value + "'.");
+			ReadNextToken ();
+
+			return fCurrentToken;
+		}
+
+		// Skips the current token if it is the same as the type and value passed.
+		public Token SkipIfPresent (TokenType type, string value) 
+		{
+			CheckForUnexpectedEndOfSource ();
+			if (fCurrentToken.Equals (type, value))
+				ReadNextToken ();
+
+			return fCurrentToken;
+		}
+
+		// Reads tokens until specified token and then skips it.
+		public Token SkipOver (TokenType type, string value) 
+		{
+			
+			CheckForUnexpectedEndOfSource ();
+			while (!fCurrentToken.Equals (type, value)) 
+			{
+				ReadNextToken ();
+				
+			}
+			ReadNextToken (); //Skip specified token
+			return fCurrentToken;
+		}
+
 	}
 }
