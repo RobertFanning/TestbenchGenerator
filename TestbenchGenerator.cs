@@ -1,20 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using VHDLparser.ParserNodes;
 
 //SHOULD BE ABLE TO CALL TOKENIZER WITH NEW SOURCE, THEREFORE I WONT NEED A TOKENIZER FOR EACH TEMPLATE FILE
 //MOVE THE HELPER FUNCTIONS FROM THE PARSER TO THE TOKENIZER SO ITS ACCESSIBLE IN THE CODE GENERATOR.
+
+
+//"""" should have method that scans file at the end and replaces placeholders
 namespace VHDLparser 
 {
 	public class TestbenchGenerator 
 	{
-		public TestbenchGenerator (Parser ParsedInput, string Templates, string Testbench) 
+		public TestbenchGenerator (Parser ParsedInput, string Templates, string Testbench, string Interfaces) 
 		{
 			Source = ParsedInput;
 			TemplatePath = Templates;
 			OutputPath = Testbench;
+			InterfacePath = Interfaces;
 
 			VerifyTemplates();
 			DuplicateTemplates();
@@ -25,6 +30,7 @@ namespace VHDLparser
 		Parser Source;
 		string TemplatePath;
 		string OutputPath;
+		string InterfacePath;
 
 		void VerifyTemplates()
 		{
@@ -60,11 +66,35 @@ namespace VHDLparser
 									lineBuilder += "output";
 									break;
 							}
-							sbText.AppendLine(lineBuilder + " " + element.Name);
+							
+							if (element.isUnpacked){
+								sbText.AppendLine(lineBuilder + "  " + element.Type + " " + element.Name);
+							}
+							else {
+								sbText.AppendLine(lineBuilder + "  logic " + element.Name);
+							}
 							lineBuilder = "";
 						}
-					}else 
+					}
+					else if (line.Contains("InsertionPoint_UnpackedDeclared"))
 					{
+						foreach (PortInterfaceElement element in Source.Portmap.Expressions)
+						{
+							if (element.isUnpacked){
+								sbText.AppendLine(element.Type + " " + element.Name);
+							}
+						}
+					}
+					else if (line.Contains("Fetch_Interface:"))
+					{
+						line = reader.ReadLine();
+						line = fetchInterface(line);
+						for (int interface_index = 0; interface_index < 2; interface_index++)
+						{
+						sbText.AppendLine(line);
+						}
+					}
+					else {
 						sbText.AppendLine(line);
 					}
 				}
@@ -73,6 +103,24 @@ namespace VHDLparser
     		writer.Write(sbText.ToString());
 			}	
 
+		}
+
+		string fetchInterface (string insertionPoint)
+		{
+			string line = "";
+			using (var reader = new System.IO.StreamReader(InterfacePath + "handshake_if.sv")) {
+				while ((line = reader.ReadLine()) != null) 
+				{
+					if (line == "bif_instantiation:")
+					{
+						line = reader.ReadLine();
+						return line;
+					}
+						
+				}
+			}
+
+			return null;
 		}
 
 	}

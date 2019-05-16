@@ -38,9 +38,10 @@ namespace VHDLparser
 
             string TemplateIn = @"C:\Users\rtfa\Documents\Templates\tmpl_uvm_module_testbench\";
             string TemplateOut = @"C:\Users\rtfa\Documents\TestbenchGeneratorOutput\";
+            string InterfaceIn = @"C:\Users\rtfa\Documents\Templates\Interfaces\";
 
 
-            TestbenchGenerator lTestbenchGenerator = new TestbenchGenerator(lParser, TemplateIn, TemplateOut);
+            TestbenchGenerator lTestbenchGenerator = new TestbenchGenerator(lParser, TemplateIn, TemplateOut, InterfaceIn);
 
 
             Console.WriteLine("GAME OVER");

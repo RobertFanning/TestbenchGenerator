@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 using VHDLparser.ParserNodes;
 
 namespace VHDLparser 
@@ -36,6 +37,7 @@ namespace VHDLparser
 
 		List<RecordTypeDeclaration> RecordTypeList;
 
+		public List<RecordTypeDeclaration> RecordType { get { return RecordTypeList; } }
 		// Constructor requires a source to be parsed.
 		// All objects declared above are created.
 
@@ -504,6 +506,7 @@ namespace VHDLparser
 			ReadNextToken (); // skip ';'
 
 			fPortmap = new PortClause (lPortInterfaceElements);
+			fPortmap.ExtractInterfaces ();
 
 			return fPortmap;
 		}
@@ -521,11 +524,13 @@ namespace VHDLparser
 
 			string type = fCurrentToken.Value;
 
+			Boolean isUnpacked = RecordTypeList.Any(recordtype => recordtype.Identifier == type);
+
 			ReadNextToken (); // skip TYPE
 			if (fCurrentToken.Equals (TokenType.Symbol, ";"))
 				ReadNextToken (); // skip ';'
 
-			return new PortInterfaceElement (signalName, inOut, type);
+			return new PortInterfaceElement (signalName, inOut, type, isUnpacked);
 		}
 
 		//----------------------------------------------------------------------------------------

@@ -9,14 +9,28 @@ namespace VHDLparser.ParserNodes
 	{
 		public PortClause(List<PortInterfaceElement> portExpressions)
 		{
-			//if (portExpressions == null) throw new ArgumentNullException("portExpressions");
+			
 			fExpressions = portExpressions;
+			
 		}
 
 		readonly List<PortInterfaceElement> fExpressions;
-		/// <summary>Gets the block that is executed when the condition evaluates to true.</summary>
-		/// <value>The block that is executed when the condition evaluates to true.</value>
 		public List<PortInterfaceElement> Expressions { get { return fExpressions; } }
+
+		public void ExtractInterfaces () {
+			string[] indentifiers = null;
+			List<string> interfaceName = new List<string> ();
+	
+			foreach (PortInterfaceElement element in fExpressions){
+				indentifiers = element.Name.Split('_');
+				Console.WriteLine(indentifiers[0]+indentifiers[1]);
+
+				interfaceName.Add (String.Concat(indentifiers[0] + '_' +indentifiers[1]));
+				elementLength +=1;
+			}
+			//int[] indexes = 
+			
+		}
 
 	}
 }
