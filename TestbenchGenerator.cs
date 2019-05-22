@@ -24,6 +24,7 @@ namespace VHDLparser
 			VerifyTemplates();
 			DuplicateTemplates();
 			GenerateBif();
+			
 
 		}
 
@@ -89,9 +90,56 @@ namespace VHDLparser
 					{
 						line = reader.ReadLine();
 						line = fetchInterface(line);
-						for (int interface_index = 0; interface_index < 2; interface_index++)
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
 						sbText.AppendLine(line);
+						}
+					}
+					else if (line.Contains("InsertionPoint_Metadata"))
+					{
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						{
+							sbText.AppendLine(interfaceInstance.Name + "_if.metadata = '0;");
+						}
+					}
+					else if (line.Contains("InsertionPoint_StreamUnpacked"))
+					{
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						{
+							foreach (PortInterfaceElement element in interfaceInstance.Expressions) {
+								if (element.isUnpacked){
+									sbText.AppendLine("assign {<<{" + element.Name + "}} = " + interfaceInstance.Name + "_if.metadata;");
+								}
+							}
+						}
+					}
+					else if (line.Contains("InsertionPoint_NotTOP"))
+					{
+						//Uncertain what needs to go here
+					}
+					else if (line.Contains("InsertionPoint_DUTConnection"))
+					{
+						sbText.AppendLine("." + Source.Portmap.Clock.Name + "(local_clk),");
+						sbText.AppendLine("." + Source.Portmap.Reset.Name + "(local_rst_n),");
+						ExtractedInterface last = Source.Portmap.InterfaceList.Last();
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						{
+							sbText.AppendLine("." + interfaceInstance.data.Name + "( " + interfaceInstance.Name + "_if.data ),");
+							sbText.AppendLine("." + interfaceInstance.req.Name + "( " + interfaceInstance.Name + "_if.req ),");
+							sbText.AppendLine("." + interfaceInstance.metadata.Name + "( " + interfaceInstance.metadata.Name + " ),");
+						    if (interfaceInstance.Equals(last))
+								sbText.AppendLine("." + interfaceInstance.ack.Name + "( " + interfaceInstance.Name + "_if.ack )");
+							else
+								sbText.AppendLine("." + interfaceInstance.ack.Name + "( " + interfaceInstance.Name + "_if.ack ),");
+		
+							
+						}
+					}
+					else if (line.Contains("InsertionPoint_ConfigdbInterface"))
+					{
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						{
+							sbText.AppendLine("uvm_config_db#(" + interfaceInstance.Name + "_" +interfaceInstance.Type + "_vif_t)::set(null, \"*\", \"${NAME}_" + interfaceInstance.Name + "_vif\", " + interfaceInstance.Name +"_if);");
 						}
 					}
 					else {

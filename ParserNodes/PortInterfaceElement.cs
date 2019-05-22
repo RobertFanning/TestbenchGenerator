@@ -9,12 +9,12 @@ namespace VHDLparser.ParserNodes
 	{
 		public PortInterfaceElement(string name, string inout, string type, Boolean unpacked)
 		{
-			if (name == null) throw new ArgumentNullException("name");
-			if (inout == null) throw new ArgumentNullException("inout");
-			if (type == null) throw new ArgumentNullException("type");
-			if (name.Length == 0) throw new ArgumentException("name cannot be an empty string.", "name");
-			if (inout.Length == 0) throw new ArgumentException("name cannot be an empty string.", "name");
-			if (type.Length == 0) throw new ArgumentException("name cannot be an empty string.", "name");
+		//	if (name == null) throw new ArgumentNullException("name");
+		//	if (inout == null) throw new ArgumentNullException("inout");
+		//	if (type == null) throw new ArgumentNullException("type");
+		//	if (name.Length == 0) throw new ArgumentException("name cannot be an empty string.", "name");
+		//	if (inout.Length == 0) throw new ArgumentException("name cannot be an empty string.", "name");
+		//	if (type.Length == 0) throw new ArgumentException("name cannot be an empty string.", "name");
 			fName = name;
 			fInOut = inout;
 			fType = type;

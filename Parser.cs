@@ -507,6 +507,7 @@ namespace VHDLparser
 
 			fPortmap = new PortClause (lPortInterfaceElements);
 			fPortmap.ExtractInterfaces ();
+			fPortmap.ExtractClockReset ();
 
 			return fPortmap;
 		}

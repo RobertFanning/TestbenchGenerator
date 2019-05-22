@@ -32,7 +32,7 @@ entity predict is
     reseta_ni               : in std_ulogic;
         
     -- inputs here
-    err_recstr_i            : in audio_rxtx_t;
+    err_recstr_i            : in audio_rxtx_t; 
     err_recstr_rdy_i        : in std_ulogic;
     err_recstr_info_i       : in intea_info_t;
     err_recstr_ack_o        : out std_ulogic;
