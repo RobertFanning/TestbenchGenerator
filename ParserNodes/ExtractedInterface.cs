@@ -21,6 +21,9 @@ namespace VHDLparser.ParserNodes
 			
 		}
 
+		string fInOut;
+		public string InOut { get { return fInOut; } }
+ 
 		readonly List<PortInterfaceElement> fExpressions;
 		public List<PortInterfaceElement> Expressions { get { return fExpressions; } }
 
@@ -49,7 +52,10 @@ namespace VHDLparser.ParserNodes
 				if (element.Name.Contains ("ack"))
 					fack = element;
 				if (element.Type == "audio_rxtx_t")
+				{
 					fdata = element;
+					fInOut = element.InOut;
+				}
 				if (element.isUnpacked)
 					fmetadata = element;
 					

@@ -11,7 +11,7 @@ namespace VHDLparser
             
             Console.WriteLine("The current time is " + DateTime.Now);
             string contents = null;
-            foreach (string file in Directory.EnumerateFiles(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ParserFiles\", "*.vhd"))
+            foreach (string file in Directory.EnumerateFiles(@"C:\Users\rober\Documents\VHDLparser\ParserFiles\", "*.vhd"))
             {
                 contents += File.ReadAllText(file);
                 contents += " EndOfFileIdentifier ";
@@ -36,9 +36,9 @@ namespace VHDLparser
             
             Console.WriteLine("Accessing list item: " + lParser.Portmap.Expressions[0].Name);
 
-            string TemplateIn = @"C:\Users\rtfa\Documents\Templates\tmpl_uvm_module_testbench\";
-            string TemplateOut = @"C:\Users\rtfa\Documents\TestbenchGeneratorOutput\";
-            string InterfaceIn = @"C:\Users\rtfa\Documents\Templates\Interfaces\";
+            string TemplateIn = @"C:\Users\rober\Documents\Templates\tmpl_uvm_module_testbench\";
+            string TemplateOut = @"C:\Users\rober\Documents\TestbenchGeneratorOutput\";
+            string InterfaceIn = @"C:\Users\rober\Documents\Templates\Interfaces\";
 
 
             TestbenchGenerator lTestbenchGenerator = new TestbenchGenerator(lParser, TemplateIn, TemplateOut, InterfaceIn);

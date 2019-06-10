@@ -35,6 +35,10 @@ namespace VHDLparser
 
 		List<EnumerationTypeDeclaration> EnumerationTypeList;
 
+		string entityName;
+
+		public string Entity  { get { return entityName; } }
+
 		List<RecordTypeDeclaration> RecordTypeList;
 
 		public List<RecordTypeDeclaration> RecordType { get { return RecordTypeList; } }
@@ -422,7 +426,9 @@ namespace VHDLparser
 			if (fCurrentToken.Type != TokenType.Word)
 				throw new ParserException ("Expected a module name.");
 
-			Variable moduleName = new Variable (fCurrentToken.Value);
+			string moduleName = new string (fCurrentToken.Value);
+
+			entityName = moduleName;
 
 			ReadNextToken ();
 			fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "is"); // skip 'is'
@@ -438,7 +444,7 @@ namespace VHDLparser
 			}
 
 			ReadNextToken (); // skip 'end'
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, moduleName.Name); // skip end {moduleName}
+			fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, moduleName); // skip end {moduleName}
 			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ";");
 
 			// Package has been parsed, now the next file can be parsed

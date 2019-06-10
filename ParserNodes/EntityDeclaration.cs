@@ -7,19 +7,19 @@ namespace VHDLparser.ParserNodes
 	/// <summary>Represents a for-loop.</summary>
 	public class EntityDeclaration : Declaration
 	{
-		public EntityDeclaration(Variable moduleName, ParserNodeCollection block)
+		public EntityDeclaration(string moduleName, ParserNodeCollection block)
 		{
 			if (moduleName == null) throw new ArgumentNullException("moduleName");
 			if (block == null) throw new ArgumentNullException("block");
 
-			fVariable = moduleName;
+			fName = moduleName;
 			fBlock = block;
 		}
 
-		readonly Variable fVariable;
+		readonly string fName;
 		/// <summary>Gets the variable that is incremented each iteration.</summary>
 		/// <value>The variable that is incremented each iteration.</value>
-		public Variable Variable { get { return fVariable; } }
+		public string Name { get { return fName; } }
 
 		readonly ParserNodeCollection fBlock;
 		/// <summary>Gets the block that is executed each iteration.</summary>

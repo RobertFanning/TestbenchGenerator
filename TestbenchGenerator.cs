@@ -24,7 +24,7 @@ namespace VHDLparser
 			VerifyTemplates();
 			DuplicateTemplates();
 			GenerateBif();
-			
+			GenerateEnvironment();
 
 		}
 
@@ -89,10 +89,15 @@ namespace VHDLparser
 					else if (line.Contains("Fetch_Interface:"))
 					{
 						line = reader.ReadLine();
-						line = fetchInterface(line);
+						List<string> lines = fetchInterface(line);
+						Console.WriteLine("COUNT IS::::" + lines.Count);
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
-						sbText.AppendLine(line);
+							foreach (string entry in lines)
+							{
+								string interfaceLine = entry.Replace("${NAME}", interfaceInstance.Name + "_if");
+								sbText.AppendLine(interfaceLine);
+							}
 						}
 					}
 					else if (line.Contains("InsertionPoint_Metadata"))
@@ -142,8 +147,9 @@ namespace VHDLparser
 							sbText.AppendLine("uvm_config_db#(" + interfaceInstance.Name + "_" +interfaceInstance.Type + "_vif_t)::set(null, \"*\", \"${NAME}_" + interfaceInstance.Name + "_vif\", " + interfaceInstance.Name +"_if);");
 						}
 					}
-					else {
-						sbText.AppendLine(line);
+					else 
+					{
+						sbText.AppendLine(line.Replace("${NAME}", Source.Entity));
 					}
 				}
 			}
@@ -153,21 +159,70 @@ namespace VHDLparser
 
 		}
 
-		string fetchInterface (string insertionPoint)
+		void GenerateEnvironment()
 		{
 			string line = "";
+			//string lineBuilder = "";
+			StringBuilder sbText = new StringBuilder();
+			using (var reader = new System.IO.StreamReader(OutputPath + "template_environment_pkg.sv")) {
+				while ((line = reader.ReadLine()) != null) 
+				{
+					if (line.Contains("Fetch_Interface:")) 
+					{
+						line = reader.ReadLine();
+						List<string> lines = fetchInterface(line);
+						Console.WriteLine("COUNT IS::::" + lines.Count);
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						{
+							foreach (string entry in lines)
+							{
+								string interfaceLine = entry.Replace("${NAME}", interfaceInstance.Name + "_if");
+								//if (interfaceInstance.InOut == "in")
+							//		interfaceLine = interfaceLine.Replace("${refModel}", "producer");
+							//	else if (interfaceInstance.InOut == "out")
+							//		interfaceLine = interfaceLine.Replace("${refModel}", "consumer");
+								sbText.AppendLine(interfaceLine);
+							}
+						}
+					}
+					else {
+						sbText.AppendLine(line.Replace("${NAME}", Source.Entity));
+					}
+				}
+			}
+			using(var writer = new System.IO.StreamWriter(OutputPath + "template_environment_pkg.sv")) {
+    		writer.Write(sbText.ToString());
+			}	
+
+		}
+
+
+		List<string> fetchInterface (string insertionPoint)
+		{
+			string line = "";
+			List<string> lines = new List<string> ();
+
 			using (var reader = new System.IO.StreamReader(InterfacePath + "handshake_if.sv")) {
 				while ((line = reader.ReadLine()) != null) 
 				{
-					if (line == "bif_instantiation:")
+					
+					if (insertionPoint == line)
 					{
+						Console.WriteLine("SEARCHING FOR ITEM:::" + insertionPoint + "GOT IN WITH:" + line);
 						line = reader.ReadLine();
-						return line;
+						while (!string.IsNullOrWhiteSpace(line))
+						{
+							Console.WriteLine(line);
+							lines.Add (line);
+							line = reader.ReadLine();
+						}
+						
+						return lines;
 					}
+					
 						
 				}
 			}
-
 			return null;
 		}
 
