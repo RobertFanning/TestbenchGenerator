@@ -7,7 +7,7 @@ namespace VHDLparser.ParserNodes
 	/// <summary>Represents a function call.</summary>
 	public class PortInterfaceElement : InterfaceElement
 	{
-		public PortInterfaceElement(string name, string inout, string type, Boolean unpacked)
+		public PortInterfaceElement(string name, string inout, string type, SignalType SigType)
 		{
 		//	if (name == null) throw new ArgumentNullException("name");
 		//	if (inout == null) throw new ArgumentNullException("inout");
@@ -18,8 +18,12 @@ namespace VHDLparser.ParserNodes
 			fName = name;
 			fInOut = inout;
 			fType = type;
-			fUnpacked = unpacked;
+		    TypeSig = SigType;
+			fInputOutput = fInOut + "put";
 		}
+
+		string fInputOutput;
+		public string InputOutput { get { return fInputOutput; } }
 
 		readonly string fName;
 		public string Name { get { return fName; } }
@@ -30,8 +34,22 @@ namespace VHDLparser.ParserNodes
 		readonly string fType;
 		public string Type { get { return fType; } }
 
-		readonly Boolean fUnpacked;
-		public Boolean isUnpacked { get { return fUnpacked; } }
+		readonly SignalType TypeSig;
+
+		public SignalType SignalType { get { return TypeSig; } }
+		public Boolean isUnpacked { get { return TypeSig.isUnpacked(); } }
+
+
+		// THIS IS WHERE I FINISHED TODAY
+		// NEED TO GET OTHER TYPES FOR 0:-17,
+		// THEY ARE STORED IN THE PARSERS LIST OF TYPES BUT NOT IN THE INTERFACE WITH THE ELEMENT
+		public string PortMapType ()
+		{
+			if (isUnpacked)
+				return fType;
+			else
+				return "logic";
+		}
 
 
 	}

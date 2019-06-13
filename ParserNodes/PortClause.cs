@@ -12,9 +12,10 @@ namespace VHDLparser.ParserNodes
 		{
 			
 			fExpressions = portExpressions;
-			fClock = new PortInterfaceElement(null, null, null, false);
-			fReset = new PortInterfaceElement(null, null, null, false);
+			fClock = new PortInterfaceElement(null, null, null, null);
+			fReset = new PortInterfaceElement(null, null, null, null);
 			fInterfaceList = new List<ExtractedInterface> ();
+			UnknownSignals = new List<PortInterfaceElement> ();
 		}
 
 		PortInterfaceElement fClock;
@@ -25,7 +26,11 @@ namespace VHDLparser.ParserNodes
 		readonly List<PortInterfaceElement> fExpressions;
 		public List<PortInterfaceElement> Expressions { get { return fExpressions; } }
 
+		List<PortInterfaceElement> UnknownSignals;
+		public List<PortInterfaceElement> NotInInterface { get { return UnknownSignals; } }
+
 		List<ExtractedInterface> fInterfaceList;
+		
 		public List<ExtractedInterface> InterfaceList { get { return fInterfaceList; } }
 
 		public void ExtractClockReset() {
@@ -41,6 +46,9 @@ namespace VHDLparser.ParserNodes
 		}
 
 		public void ExtractInterfaces () {
+			List<PortInterfaceElement> AllSignals = new List<PortInterfaceElement> ();
+			AllSignals = fExpressions.ToList();
+			
 			string[] indentifiers = null;
 			List<string> interfaceName = new List<string> ();
 	
@@ -77,6 +85,12 @@ namespace VHDLparser.ParserNodes
 					ExtractedInterface extractInter = new ExtractedInterface (key, "handshake", std_ulogic);
 					extractInter.ExtractSignals();
 					fInterfaceList.Add (extractInter);
+					//REMOVE ALL SIGNALS THAT ARE IN INTERFACES 
+					AllSignals.RemoveAll(x => std_ulogic.Contains(x));
+					AllSignals.Remove(fClock);
+					AllSignals.Remove(fReset);
+					UnknownSignals = AllSignals.ToList();
+
 				}
 			}
 		}

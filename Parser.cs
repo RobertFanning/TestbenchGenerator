@@ -20,6 +20,8 @@ namespace VHDLparser
 		// lib of type MyLibrary contains the operations of all possible predefined VHDL functions.
 		MyLibrary lib;
 
+		SubtypeDeclaration[] PredefinedTypes = { new SubtypeDeclaration ("std_ulogic", new SubtypeIndication ("std_ulogic", 0, 0))};
+
 		PortClause fPortmap;
 		public PortClause Portmap { get { return fPortmap; } }
 
@@ -231,7 +233,7 @@ namespace VHDLparser
 				Node left = ParseExpression ();
 				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "downto");
 				Node right = ParseExpression ();
-				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left, right);
+				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left.Eval(), right.Eval());
 
 				return ParsedSubtype;
 			}
@@ -241,7 +243,7 @@ namespace VHDLparser
 				Node left = ParseExpression ();
 				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "to");
 				Node right = ParseExpression ();
-				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left, right);
+				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left.Eval(), right.Eval());
 
 				return ParsedSubtype;
 			}
@@ -328,7 +330,7 @@ namespace VHDLparser
 			return ParsedSubtype;
 		}
 
-		Declaration ParseTypeDeclaration () {
+		SignalType ParseTypeDeclaration () {
 
 			ReadNextToken (); //skip type
 
@@ -530,14 +532,30 @@ namespace VHDLparser
 			ReadNextToken ();
 
 			string type = fCurrentToken.Value;
-
-			Boolean isUnpacked = RecordTypeList.Any(recordtype => recordtype.Identifier == type);
-
+			
 			ReadNextToken (); // skip TYPE
 			if (fCurrentToken.Equals (TokenType.Symbol, ";"))
 				ReadNextToken (); // skip ';'
+			
 
-			return new PortInterfaceElement (signalName, inOut, type, isUnpacked);
+			SignalType fType;
+
+			if ((fType = RecordTypeList.Find(item => item.Identifier == type)) != null)
+				return new PortInterfaceElement (signalName, inOut, type, fType);
+			else if ((fType = SubtypeList.Find(item => item.Identifier == type)) != null)
+				return new PortInterfaceElement (signalName, inOut, type, fType);
+			else if ((fType = ArrayTypeList.Find(item => item.Identifier == type)) != null)
+				return new PortInterfaceElement (signalName, inOut, type, fType);
+			else if ((fType = EnumerationTypeList.Find(item => item.Identifier == type)) != null)
+				return new PortInterfaceElement (signalName, inOut, type, fType);
+			else if ((fType = Array.Find(PredefinedTypes, item => item.Identifier == type)) != null)
+				return new PortInterfaceElement (signalName, inOut, type, fType);
+			else
+				throw new ParserException ("Signal Type is unknown. It exists neither in the Package file or in the Predifined types.");
+
+			
+
+			
 		}
 
 		//----------------------------------------------------------------------------------------

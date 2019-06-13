@@ -5,7 +5,7 @@ using System.Text;
 namespace VHDLparser.ParserNodes
 {
 	
-	public class SubtypeDeclaration : Declaration
+	public class SubtypeDeclaration : SignalType
 	{
 		public SubtypeDeclaration(string identifier, SubtypeIndication subtype)
 		{
@@ -26,5 +26,37 @@ namespace VHDLparser.ParserNodes
 		public int Right { get { return fSubtype.Right; } }
 
 		public int Left { get { return fSubtype.Left; } }
+
+		public override string getType()
+        {
+            // Just return it.  Too easy.
+            return "Subtype";
+        }
+
+		public override int getLeft()
+        {
+            // Just return it.  Too easy.
+            return Left;
+        }
+
+		public override int getRight()
+        {
+            // Just return it.  Too easy.
+            return Right;
+        }
+
+		public override Boolean isUnpacked()
+        {
+            // Just return it.  Too easy.
+            return false;
+        }
+
+		public override string PortmapDefinition()
+        {
+            if (Left != Right)
+            	return ("  logic [" + Left + ":" + Right + "]  ");
+			else 
+				return ("  logic  ");
+        }
 	}
 }

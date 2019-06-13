@@ -22,69 +22,51 @@ namespace VHDLparser
 			InterfacePath = Interfaces;
 
 			VerifyTemplates();
-			DuplicateTemplates();
 			GenerateBif();
-			GenerateEnvironment();
-
+			GenerateTestbench();
 		}
 
 		Parser Source;
 		string TemplatePath;
 		string OutputPath;
 		string InterfacePath;
+		string[] FileNames = {"_environment_pkg.sv", "_env_config_pkg.sv", "_test_pkg.sv", "_base_test_pkg.sv", "_type_pkg.sv", "_scoreboard_pkg.sv", "_ref_model_pkg.sv"};
 
 		void VerifyTemplates()
 		{
 			if (!File.Exists(TemplatePath + "template_bif.sv")) throw new ParserException ("Template for bif.sv missing");
 		}
 
-		void DuplicateTemplates()
-		{
-			foreach (string file in Directory.EnumerateFiles(TemplatePath, "*.sv"))
-			{
-   				File.Copy(file, OutputPath + Path.GetFileName(file), true);
-			}
-		}
 
 		void GenerateBif()
 		{
 			string line = "";
-			string lineBuilder = "";
 			StringBuilder sbText = new StringBuilder();
-			using (var reader = new System.IO.StreamReader(OutputPath + "template_bif.sv")) {
+			using (var reader = new System.IO.StreamReader(TemplatePath + "template_bif.sv")) {
 				while ((line = reader.ReadLine()) != null) 
 				{
 					if (line.Contains("InsertionPoint_Portmap")) 
 					{
-						//INSERT PORTMAP
-						foreach (PortInterfaceElement element in Source.Portmap.Expressions)
-						{
-							switch (element.InOut){
-								case "in": 
-									lineBuilder += "input";
-									break;
-								case "out":
-									lineBuilder += "output";
-									break;
-							}
-							
-							if (element.isUnpacked){
-								sbText.AppendLine(lineBuilder + "  " + element.Type + " " + element.Name);
-							}
-							else {
-								sbText.AppendLine(lineBuilder + "  logic " + element.Name);
-							}
-							lineBuilder = "";
-						}
+						PortMapSpecification (sbText);
 					}
 					else if (line.Contains("InsertionPoint_UnpackedDeclared"))
 					{
+
 						foreach (PortInterfaceElement element in Source.Portmap.Expressions)
 						{
 							if (element.isUnpacked){
-								sbText.AppendLine(element.Type + " " + element.Name);
+								sbText.AppendLine("  packed_" + element.Type + " " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
 							}
 						}
+
+						foreach (PortInterfaceElement element in Source.Portmap.Expressions)
+						{
+							if (element.isUnpacked){
+								sbText.AppendLine("  " + element.Type + " " + element.Name.Remove(element.Name.Length-2, 2) + ";");
+							}
+						}
+
+						
 					}
 					else if (line.Contains("Fetch_Interface:"))
 					{
@@ -95,7 +77,8 @@ namespace VHDLparser
 						{
 							foreach (string entry in lines)
 							{
-								string interfaceLine = entry.Replace("${NAME}", interfaceInstance.Name + "_if");
+								string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
+								interfaceLine = interfaceLine.Replace("${NAME}", Source.Entity);
 								sbText.AppendLine(interfaceLine);
 							}
 						}
@@ -104,7 +87,8 @@ namespace VHDLparser
 					{
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
-							sbText.AppendLine(interfaceInstance.Name + "_if.metadata = '0;");
+							if (interfaceInstance.InOut == "in")
+								sbText.AppendLine("      " + interfaceInstance.Name + "_vif.metadata = '0;");
 						}
 					}
 					else if (line.Contains("InsertionPoint_StreamUnpacked"))
@@ -113,9 +97,31 @@ namespace VHDLparser
 						{
 							foreach (PortInterfaceElement element in interfaceInstance.Expressions) {
 								if (element.isUnpacked){
-									sbText.AppendLine("assign {<<{" + element.Name + "}} = " + interfaceInstance.Name + "_if.metadata;");
+									if (interfaceInstance.InOut == "in"){
+										sbText.AppendLine("    assign " + element.Name.Remove(element.Name.Length-2, 2) + "_p = " + interfaceInstance.Name + "_vif.metadata;");
+										sbText.AppendLine("    assign {<<{" + element.Name.Remove(element.Name.Length-2, 2) + "}} = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
+									}
+									else if (interfaceInstance.InOut == "out"){
+										sbText.AppendLine("    assign {>>{" + element.Name.Remove(element.Name.Length-2, 2) + "_p}} = " + element.Name.Remove(element.Name.Length-2, 2) + ";");
+										sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.metadata = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
+										
+									}
+									sbText.AppendLine("");
 								}
 							}
+						}
+					}
+
+					else if (line.Contains("InsertionPoint_NotTop"))
+					{
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						{
+							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.req = " + interfaceInstance.req.Name + ";");
+							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.data = " + interfaceInstance.data.Name + ";");
+							sbText.AppendLine("    assign {>>{" + interfaceInstance.metadata.Name.Remove(interfaceInstance.metadata.Name.Length-2, 2) + "_p}} = " + interfaceInstance.metadata.Name + ";");
+							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.metadata = " + interfaceInstance.metadata.Name.Remove(interfaceInstance.metadata.Name.Length-2, 2)+ "_p;");
+							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.ack = " + interfaceInstance.ack.Name + ";");
+							sbText.AppendLine("");
 						}
 					}
 					else if (line.Contains("InsertionPoint_NotTOP"))
@@ -124,28 +130,7 @@ namespace VHDLparser
 					}
 					else if (line.Contains("InsertionPoint_DUTConnection"))
 					{
-						sbText.AppendLine("." + Source.Portmap.Clock.Name + "(local_clk),");
-						sbText.AppendLine("." + Source.Portmap.Reset.Name + "(local_rst_n),");
-						ExtractedInterface last = Source.Portmap.InterfaceList.Last();
-						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
-						{
-							sbText.AppendLine("." + interfaceInstance.data.Name + "( " + interfaceInstance.Name + "_if.data ),");
-							sbText.AppendLine("." + interfaceInstance.req.Name + "( " + interfaceInstance.Name + "_if.req ),");
-							sbText.AppendLine("." + interfaceInstance.metadata.Name + "( " + interfaceInstance.metadata.Name + " ),");
-						    if (interfaceInstance.Equals(last))
-								sbText.AppendLine("." + interfaceInstance.ack.Name + "( " + interfaceInstance.Name + "_if.ack )");
-							else
-								sbText.AppendLine("." + interfaceInstance.ack.Name + "( " + interfaceInstance.Name + "_if.ack ),");
-		
-							
-						}
-					}
-					else if (line.Contains("InsertionPoint_ConfigdbInterface"))
-					{
-						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
-						{
-							sbText.AppendLine("uvm_config_db#(" + interfaceInstance.Name + "_" +interfaceInstance.Type + "_vif_t)::set(null, \"*\", \"${NAME}_" + interfaceInstance.Name + "_vif\", " + interfaceInstance.Name +"_if);");
-						}
+						sbText = InstantiateDUT (sbText);
 					}
 					else 
 					{
@@ -153,47 +138,60 @@ namespace VHDLparser
 					}
 				}
 			}
-			using(var writer = new System.IO.StreamWriter(OutputPath + "template_bif.sv")) {
+			using(var writer = new System.IO.StreamWriter(OutputPath + Source.Entity +"_bif.sv")) {
     		writer.Write(sbText.ToString());
-			}	
-
+			}
 		}
 
-		void GenerateEnvironment()
+		void GenerateTestbench()
 		{
-			string line = "";
-			//string lineBuilder = "";
-			StringBuilder sbText = new StringBuilder();
-			using (var reader = new System.IO.StreamReader(OutputPath + "template_environment_pkg.sv")) {
-				while ((line = reader.ReadLine()) != null) 
-				{
-					if (line.Contains("Fetch_Interface:")) 
+			foreach (string file in FileNames){
+				string line = "";
+				StringBuilder sbText = new StringBuilder();	
+				using (StreamReader reader = new System.IO.StreamReader(TemplatePath + "template" + file)) {
+					while ((line = reader.ReadLine()) != null) 
 					{
-						line = reader.ReadLine();
-						List<string> lines = fetchInterface(line);
-						Console.WriteLine("COUNT IS::::" + lines.Count);
-						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						if (line.Contains("Fetch_Interface:")) 
 						{
-							foreach (string entry in lines)
+							line = reader.ReadLine();
+							List<string> lines = fetchInterface(line);
+							Console.WriteLine("COUNT IS::::" + lines.Count);
+							foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 							{
-								string interfaceLine = entry.Replace("${NAME}", interfaceInstance.Name + "_if");
-								//if (interfaceInstance.InOut == "in")
-							//		interfaceLine = interfaceLine.Replace("${refModel}", "producer");
-							//	else if (interfaceInstance.InOut == "out")
-							//		interfaceLine = interfaceLine.Replace("${refModel}", "consumer");
-								sbText.AppendLine(interfaceLine);
+								foreach (string entry in lines)
+								{		
+									string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
+									interfaceLine = interfaceLine.Replace("${NAME}", Source.Entity);
+									if (interfaceLine[interfaceLine.Length-1] == ',' && interfaceInstance.Equals(Source.Portmap.InterfaceList.Last()))
+										interfaceLine = interfaceLine.Remove(interfaceLine.Length-1, 1);
+									//Only for _environement_pkg.sv
+									if (interfaceInstance.InOut == "in" && !line.Contains("OnlyOutput")){
+										interfaceLine = interfaceLine.Replace("${ProducerConsumer}", "producer");
+										interfaceLine = interfaceLine.Replace("${ProdCons}", "prod");
+										interfaceLine = interfaceLine.Replace("${InitiatorTarget}", "initiator");
+										interfaceLine = interfaceLine.Replace("${MasterSlave}", "MASTER");
+										sbText.AppendLine(interfaceLine);
+									}	
+									else if (interfaceInstance.InOut == "out" && !line.Contains("OnlyInput")){
+										interfaceLine = interfaceLine.Replace("${ProducerConsumer}", "consumer");
+										interfaceLine = interfaceLine.Replace("${ProdCons}", "cons");
+										interfaceLine = interfaceLine.Replace("${InitiatorTarget}", "target");
+										interfaceLine = interfaceLine.Replace("${MasterSlave}", "SLAVE");
+										sbText.AppendLine(interfaceLine);
+									}
+								}
 							}
 						}
-					}
-					else {
-						sbText.AppendLine(line.Replace("${NAME}", Source.Entity));
+						else {
+							sbText.AppendLine(line.Replace("${NAME}", Source.Entity));
+						}
 					}
 				}
-			}
-			using(var writer = new System.IO.StreamWriter(OutputPath + "template_environment_pkg.sv")) {
-    		writer.Write(sbText.ToString());
+			
+				using(var writer = new System.IO.StreamWriter(OutputPath + Source.Entity + file)) {
+				writer.Write(sbText.ToString());
+				}
 			}	
-
 		}
 
 
@@ -226,7 +224,62 @@ namespace VHDLparser
 			return null;
 		}
 
+
+		StringBuilder PortMapSpecification (StringBuilder sbText)
+		{
+			string lineBuilder = "";
+			sbText.AppendLine("    " + Source.Portmap.Clock.InputOutput +  Source.Portmap.Clock.SignalType.PortmapDefinition() + Source.Portmap.Clock.Name);
+			sbText.AppendLine("    " + Source.Portmap.Reset.InputOutput +  Source.Portmap.Reset.SignalType.PortmapDefinition() + Source.Portmap.Reset.Name);
+			sbText.AppendLine("");
+
+			foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+			{
+				foreach (PortInterfaceElement interfaceElement in interfaceInstance.Expressions)
+				{
+					sbText.AppendLine("    " + interfaceElement.InputOutput + interfaceElement.SignalType.PortmapDefinition() + interfaceElement.Name);
+				}
+				sbText.AppendLine("");
+			}
+
+			return sbText;
+
+		}
+
+		StringBuilder InstantiateDUT (StringBuilder sbText)
+		{
+			sbText.AppendLine("      ." + Source.Portmap.Clock.Name + "  (local_clk),");
+			sbText.AppendLine("      ." + Source.Portmap.Reset.Name + "  (local_rst_n),");
+			sbText.AppendLine("");
+			ExtractedInterface last = Source.Portmap.InterfaceList.Last();
+			foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+			{
+				sbText.AppendLine("      ." + interfaceInstance.data.Name + "  ( " + interfaceInstance.Name + "_vif.data ),");
+				sbText.AppendLine("      ." + interfaceInstance.req.Name +  "  ( " + interfaceInstance.Name + "_vif.req ),");
+				sbText.AppendLine("      ." + interfaceInstance.metadata.Name + "  ( " + interfaceInstance.metadata.Name.Remove(interfaceInstance.metadata.Name.Length-2, 2) + " ),");
+				if (interfaceInstance.Equals(last))
+					sbText.AppendLine("      ." + interfaceInstance.ack.Name + "  ( " + interfaceInstance.Name + "_vif.ack )");
+				else 
+					sbText.AppendLine("      ." + interfaceInstance.ack.Name + "  ( " + interfaceInstance.Name + "_vif.ack ),");
+				
+				sbText.AppendLine("");
+					
+				
+			}
+
+			foreach (PortInterfaceElement UnknownSignal in Source.Portmap.NotInInterface)
+			{
+				if (UnknownSignal.Equals(Source.Portmap.NotInInterface.Last())){
+					sbText.AppendLine("      ." + UnknownSignal.Name + "        ()");
+					sbText.AppendLine("");
+				}
+				else 
+					sbText.AppendLine("      ." + UnknownSignal.Name + "        (),");	
+			}
+
+
+			return sbText;
+
+		}
+
 	}
 }
-
-

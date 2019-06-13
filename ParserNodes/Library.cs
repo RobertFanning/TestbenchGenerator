@@ -32,6 +32,7 @@ namespace VHDLparser.ParserNodes
         {
             return first;
         }
+
         
     }
 }

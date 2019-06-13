@@ -14,10 +14,10 @@ namespace VHDLparser.ParserNodes
 			fExpressions = portExpressions;
 			fType = InterfaceType;
 			fName = name;
-			freq = new PortInterfaceElement(null, null, null, false);
-			fack = new PortInterfaceElement(null, null, null, false);
-			fdata = new PortInterfaceElement(null, null, null, false);
-			fmetadata = new PortInterfaceElement(null, null, null, false);
+			freq = new PortInterfaceElement(null, null, null, null);
+			fack = new PortInterfaceElement(null, null, null, null);
+			fdata = new PortInterfaceElement(null, null, null, null);
+			fmetadata = new PortInterfaceElement(null, null, null, null);
 			
 		}
 
