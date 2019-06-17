@@ -27,6 +27,12 @@ namespace VHDLparser.ParserNodes
 
 		public int Left { get { return fSubtype.Left; } }
 
+		public override string getIdentifier()
+        {
+            // Just return it.  Too easy.
+            return fIdentifier;
+        }
+
 		public override string getType()
         {
             // Just return it.  Too easy.
@@ -36,13 +42,19 @@ namespace VHDLparser.ParserNodes
 		public override int getLeft()
         {
             // Just return it.  Too easy.
-            return Left;
+            if (Left > Right)
+				return Left;
+			else 
+				return Right;
         }
 
 		public override int getRight()
         {
             // Just return it.  Too easy.
-            return Right;
+            if (Left > Right)
+				return Right;
+			else 
+				return Left;
         }
 
 		public override Boolean isUnpacked()
@@ -54,7 +66,7 @@ namespace VHDLparser.ParserNodes
 		public override string PortmapDefinition()
         {
             if (Left != Right)
-            	return ("  logic [" + Left + ":" + Right + "]  ");
+            	return ("  logic [" + getLeft() + ":" + getRight() + "]  ");
 			else 
 				return ("  logic  ");
         }

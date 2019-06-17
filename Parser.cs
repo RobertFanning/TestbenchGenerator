@@ -22,6 +22,8 @@ namespace VHDLparser
 
 		SubtypeDeclaration[] PredefinedTypes = { new SubtypeDeclaration ("std_ulogic", new SubtypeIndication ("std_ulogic", 0, 0))};
 
+		public SubtypeDeclaration[] Predefined { get { return PredefinedTypes; } }
+
 		PortClause fPortmap;
 		public PortClause Portmap { get { return fPortmap; } }
 
@@ -53,7 +55,7 @@ namespace VHDLparser
 
 			fTokenizer = new Tokenizer (source);
 
-			fPortmap = new PortClause(null);
+			fPortmap = new PortClause(null, null);
 
 			lib = new MyLibrary ();
 
@@ -234,7 +236,6 @@ namespace VHDLparser
 				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "downto");
 				Node right = ParseExpression ();
 				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left.Eval(), right.Eval());
-
 				return ParsedSubtype;
 			}
 			//Else range Y to X
@@ -243,7 +244,10 @@ namespace VHDLparser
 				Node left = ParseExpression ();
 				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "to");
 				Node right = ParseExpression ();
-				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left.Eval(), right.Eval());
+				var bitsRight = Math.Log((right.Eval()+1), 2);
+				var bitsLeft = Math.Log((left.Eval()+1), 2);
+				Console.WriteLine("BITS RIGHT ISSSSS:::: " + bitsRight);
+				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, (int)Math.Ceiling(bitsLeft), (int)Math.Ceiling(bitsRight));
 
 				return ParsedSubtype;
 			}
@@ -351,7 +355,8 @@ namespace VHDLparser
 			} else if (fCurrentToken.Equals (TokenType.Word, "record")) {
 
 				List<string> identifierList = new List<string> ();
-				List<string> subtypeIndicationList = new List<string> ();
+				List<SignalType> subtypeIndicationList = new List<SignalType> ();
+				SignalType fType;
 
 				ReadNextToken (); //skip "record"
 
@@ -360,11 +365,27 @@ namespace VHDLparser
 				while (!fCurrentToken.Equals (TokenType.Word, "end")) {
 					identifierList.Add (fCurrentToken.Value);
 					fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ":");
-					subtypeIndicationList.Add (fCurrentToken.Value);
+					do
+					{
+						if ((fType = RecordTypeList.Find(item => item.Identifier == fCurrentToken.Value)) != null) break;
+
+						if ((fType = SubtypeList.Find(item => item.Identifier == fCurrentToken.Value)) != null) break;
+
+						if ((fType = ArrayTypeList.Find(item => item.Identifier == fCurrentToken.Value)) != null) break;
+
+						if ((fType = EnumerationTypeList.Find(item => item.Identifier == fCurrentToken.Value)) != null) break;
+
+						if ((fType = Array.Find(PredefinedTypes, item => item.Identifier == fCurrentToken.Value)) != null) break;
+
+					} while (false);
+					subtypeIndicationList.Add (fType);
 					fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
 				}
 				//Skip Over: end record;
 				fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
+
+				
+
 				RecordTypeDeclaration ParsedRecordType = new RecordTypeDeclaration (identifier, identifierList, subtypeIndicationList);
 				RecordTypeList.Add (ParsedRecordType);
 				return ParsedRecordType;
@@ -501,21 +522,29 @@ namespace VHDLparser
 
 			ReadNextToken (); // skip 'port'
 			ReadNextToken (); // skip '('
+			RecordTypeDeclaration fType;
 			List<PortInterfaceElement> lPortInterfaceElements = new List<PortInterfaceElement> ();
+			List<RecordTypeDeclaration> UnpackedList = new List<RecordTypeDeclaration> ();
 			PortInterfaceElement lPortInterfaceElement; 
 			CheckForUnexpectedEndOfSource ();
 			while (!fCurrentToken.Equals (TokenType.Symbol, ")")) {
-				if ((lPortInterfaceElement = ParsePortInterfaceElement ()) != null)
+				if ((lPortInterfaceElement = ParsePortInterfaceElement ()) != null){
 					lPortInterfaceElements.Add (lPortInterfaceElement);
+					//Create list of all unpacked types so the methods specific to record types can be utilized.
+					if ((fType = RecordTypeList.Find(item => item.Identifier == lPortInterfaceElement.Type)) != null)
+						UnpackedList.Add (fType);
+				}
 				else throw new ParserException ("Unexpected end of source.");
 			}
 
 			ReadNextToken (); // skip ')'
 			ReadNextToken (); // skip ';'
 
-			fPortmap = new PortClause (lPortInterfaceElements);
+			//Remove all duplicated from list of Unpacked types.
+			UnpackedList = UnpackedList.Distinct().ToList();
+
+			fPortmap = new PortClause (lPortInterfaceElements, UnpackedList);
 			fPortmap.ExtractInterfaces ();
-			fPortmap.ExtractClockReset ();
 
 			return fPortmap;
 		}

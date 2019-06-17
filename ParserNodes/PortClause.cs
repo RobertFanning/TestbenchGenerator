@@ -8,10 +8,11 @@ namespace VHDLparser.ParserNodes
 	/// <summary>Represents a for-loop.</summary>
 	public class PortClause : Clause
 	{
-		public PortClause(List<PortInterfaceElement> portExpressions)
+		public PortClause(List<PortInterfaceElement> portExpressions,List<RecordTypeDeclaration> Unpacked)
 		{
 			
 			fExpressions = portExpressions;
+			fUnpackedList = Unpacked; 
 			fClock = new PortInterfaceElement(null, null, null, null);
 			fReset = new PortInterfaceElement(null, null, null, null);
 			fInterfaceList = new List<ExtractedInterface> ();
@@ -28,6 +29,9 @@ namespace VHDLparser.ParserNodes
 
 		List<PortInterfaceElement> UnknownSignals;
 		public List<PortInterfaceElement> NotInInterface { get { return UnknownSignals; } }
+
+		List<RecordTypeDeclaration> fUnpackedList;
+		public List<RecordTypeDeclaration> UnpackedList { get { return fUnpackedList; } }
 
 		List<ExtractedInterface> fInterfaceList;
 		
@@ -48,6 +52,7 @@ namespace VHDLparser.ParserNodes
 		public void ExtractInterfaces () {
 			List<PortInterfaceElement> AllSignals = new List<PortInterfaceElement> ();
 			AllSignals = fExpressions.ToList();
+			ExtractClockReset();
 			
 			string[] indentifiers = null;
 			List<string> interfaceName = new List<string> ();

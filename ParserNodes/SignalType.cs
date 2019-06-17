@@ -10,6 +10,8 @@ namespace VHDLparser.ParserNodes
 		public abstract string getType();
 		public abstract int getLeft();
 		public abstract int getRight();
+
+		public abstract string getIdentifier();
 		public abstract Boolean isUnpacked();
 		public abstract string PortmapDefinition();
 	}

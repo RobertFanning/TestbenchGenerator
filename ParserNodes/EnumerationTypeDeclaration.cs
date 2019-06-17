@@ -25,7 +25,13 @@ namespace VHDLparser.ParserNodes
 
 		public int Left { get { return (fEnumerationList.Count-1); } }
 
-		public int Right { get { return '0'; } }
+		public int Right { get { return 0; } }
+
+        public override string getIdentifier()
+        {
+            // Just return it.  Too easy.
+            return fIdentifier;
+        }
 
 		public override string getType()
         {
@@ -54,7 +60,14 @@ namespace VHDLparser.ParserNodes
 		public override string PortmapDefinition()
         {
             // Just return it.  Too easy.
-            return ("  " + Identifier + "  ");
+            string linebuilder ="";
+            foreach (string enumer in fEnumerationList)
+            {
+                linebuilder += enumer + ", ";
+            }            
+            linebuilder = linebuilder.Remove(linebuilder.Length-2, 2);
+
+            return ("  enum bit[" + Left + ":" + Right + "] {" + linebuilder + "} ");
         }
 
 	}

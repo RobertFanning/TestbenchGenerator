@@ -29,6 +29,12 @@ namespace VHDLparser.ParserNodes
 
 		public int Right { get { return fright; } }
 
+		public override string getIdentifier()
+        {
+            // Just return it.  Too easy.
+            return fType;
+        }
+
 		public override string getType()
         {
             // Just return it.  Too easy.

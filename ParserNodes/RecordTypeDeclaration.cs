@@ -8,16 +8,30 @@ namespace VHDLparser.ParserNodes
 	//This is a composite type definition.
 	public class RecordTypeDeclaration : SignalType
 	{
-		public RecordTypeDeclaration(string identifier, List<string> identifierList, List<string> subtypeIndication)
+		public RecordTypeDeclaration(string identifier, List<string> identifierList, List<SignalType> subtypeIndication)
 		{
 			if (identifier == null) throw new ArgumentNullException("indentifier");
 
 			fIdentifier = identifier;
+            fIdentifierList = identifierList;
+            fSubtypeIndication = subtypeIndication;
 		}
 
 		readonly string fIdentifier;
 	
 		public string Identifier { get { return fIdentifier; } }
+
+       List<string> fIdentifierList;
+		public List<string> IdentifierList { get { return fIdentifierList; } }
+
+        List<SignalType> fSubtypeIndication;
+		public List<SignalType> SubtypeList { get { return fSubtypeIndication; } }
+
+        public override string getIdentifier()
+        {
+            // Just return it.  Too easy.
+            return fIdentifier;
+        }
 
 		public override string getType()
         {

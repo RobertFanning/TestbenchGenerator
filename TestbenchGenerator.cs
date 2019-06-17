@@ -182,6 +182,8 @@ namespace VHDLparser
 								}
 							}
 						}
+						else if (line.Contains("Type_Package_Unpacked:"))
+							DefineUnpackedTypes(sbText);
 						else {
 							sbText.AppendLine(line.Replace("${NAME}", Source.Entity));
 						}
@@ -240,6 +242,44 @@ namespace VHDLparser
 				}
 				sbText.AppendLine("");
 			}
+
+			return sbText;
+
+		}
+
+		StringBuilder DefineUnpackedTypes (StringBuilder sbText)
+		{
+			string lineBuilder = "";
+			
+			foreach (RecordTypeDeclaration RecordType in Source.Portmap.UnpackedList)
+			{
+				var combined = RecordType.IdentifierList.Zip(RecordType.SubtypeList, (n, t) => new { Name = n, Type = t });
+				foreach (var element in combined) 
+				{
+					if (!(Array.FindIndex(Source.Predefined, x => x.getIdentifier() == element.Type.getIdentifier()) > -1))
+					{
+					//	if (element.Type.getType() == "EnumerationType")
+						//	sbText.AppendLine("typedef enum " + element.Type.PortmapDefinition() + element.Type.getIdentifier()+ ";");
+						//else
+							sbText.AppendLine("typedef" + element.Type.PortmapDefinition() + element.Type.getIdentifier()+ ";");
+					}
+			
+						
+				}
+
+				sbText.AppendLine("typedef struct packed {");
+				
+				foreach (var element in combined) 
+				{
+					if (Array.FindIndex(Source.Predefined, x => x.getIdentifier() == element.Type.getIdentifier()) > -1)
+						sbText.AppendLine(element.Type.PortmapDefinition() + " " + element.Name + ";");
+					else 
+						sbText.AppendLine("  " +element.Type.getIdentifier() + " " + element.Name + ";");
+				}
+				sbText.AppendLine("} packed_" + RecordType.getIdentifier() + ";" );
+			}
+			
+
 
 			return sbText;
 
