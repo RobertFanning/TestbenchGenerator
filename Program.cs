@@ -37,7 +37,7 @@ namespace VHDLparser
             Console.WriteLine("Accessing list item: " + lParser.Portmap.Expressions[0].Name);
 
             string TemplateIn = @"C:\Users\rtfa\Documents\Templates\tmpl_uvm_module_testbench\";
-            string TemplateOut = @"C:\Users\rtfa\Documents\Templates\DELETEme\";
+            string TemplateOut = @"C:\Users\rtfa\Desktop\predict_tb_generated\";
             string InterfaceIn = @"C:\Users\rtfa\Documents\Templates\Interfaces\";
 
 

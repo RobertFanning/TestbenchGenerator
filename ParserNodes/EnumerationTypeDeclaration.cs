@@ -67,7 +67,7 @@ namespace VHDLparser.ParserNodes
             }            
             linebuilder = linebuilder.Remove(linebuilder.Length-2, 2);
 
-            return ("  enum bit[" + Left + ":" + Right + "] {" + linebuilder + "} ");
+            return ("  enum bit[31:0] {" + linebuilder + "} ");
         }
 
 	}

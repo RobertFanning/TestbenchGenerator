@@ -247,7 +247,7 @@ namespace VHDLparser
 				var bitsRight = Math.Log((right.Eval()+1), 2);
 				var bitsLeft = Math.Log((left.Eval()+1), 2);
 				Console.WriteLine("BITS RIGHT ISSSSS:::: " + bitsRight);
-				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, (int)Math.Ceiling(bitsLeft), (int)Math.Ceiling(bitsRight));
+				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, (int)Math.Ceiling(bitsLeft), 31);
 
 				return ParsedSubtype;
 			}

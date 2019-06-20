@@ -37,7 +37,6 @@ namespace VHDLparser
 			if (!File.Exists(TemplatePath + "template_bif.sv")) throw new ParserException ("Template for bif.sv missing");
 		}
 
-
 		void GenerateBif()
 		{
 			string line = "";
@@ -79,6 +78,9 @@ namespace VHDLparser
 							{
 								string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
 								interfaceLine = interfaceLine.Replace("${NAME}", Source.Entity);
+								//Even thought below it states "$leftREQ" and "$rightREQ" what its really requesting is the data signal.
+								interfaceLine = interfaceLine.Replace("$leftREQ", interfaceInstance.data.SignalType.getLeft().ToString());
+								interfaceLine = interfaceLine.Replace("$rightREQ", interfaceInstance.data.SignalType.getRight().ToString());
 								sbText.AppendLine(interfaceLine);
 							}
 						}
@@ -162,6 +164,9 @@ namespace VHDLparser
 								{		
 									string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
 									interfaceLine = interfaceLine.Replace("${NAME}", Source.Entity);
+									//Even thought below it states "$leftREQ" and "$rightREQ" what its really requesting is the data signal.
+									interfaceLine = interfaceLine.Replace("$leftREQ", interfaceInstance.data.SignalType.getLeft().ToString());
+									interfaceLine = interfaceLine.Replace("$rightREQ", interfaceInstance.data.SignalType.getRight().ToString());
 									if (interfaceLine[interfaceLine.Length-1] == ',' && interfaceInstance.Equals(Source.Portmap.InterfaceList.Last()))
 										interfaceLine = interfaceLine.Remove(interfaceLine.Length-1, 1);
 									//Only for _environement_pkg.sv
@@ -230,15 +235,18 @@ namespace VHDLparser
 		StringBuilder PortMapSpecification (StringBuilder sbText)
 		{
 			string lineBuilder = "";
-			sbText.AppendLine("    " + Source.Portmap.Clock.InputOutput +  Source.Portmap.Clock.SignalType.PortmapDefinition() + Source.Portmap.Clock.Name);
-			sbText.AppendLine("    " + Source.Portmap.Reset.InputOutput +  Source.Portmap.Reset.SignalType.PortmapDefinition() + Source.Portmap.Reset.Name);
+			sbText.AppendLine("    " + Source.Portmap.Clock.InputOutput +  Source.Portmap.Clock.SignalType.PortmapDefinition() + Source.Portmap.Clock.Name + ",");
+			sbText.AppendLine("    " + Source.Portmap.Reset.InputOutput +  Source.Portmap.Reset.SignalType.PortmapDefinition() + Source.Portmap.Reset.Name + ",");
 			sbText.AppendLine("");
 
 			foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 			{
 				foreach (PortInterfaceElement interfaceElement in interfaceInstance.Expressions)
 				{
-					sbText.AppendLine("    " + interfaceElement.InputOutput + interfaceElement.SignalType.PortmapDefinition() + interfaceElement.Name);
+					if (interfaceInstance.Equals(Source.Portmap.InterfaceList.Last()) && interfaceElement.Equals(interfaceInstance.Expressions.Last()))
+						sbText.AppendLine("    input  " + interfaceElement.SignalType.PortmapDefinition() + interfaceElement.Name);
+					else
+						sbText.AppendLine("    input  " + interfaceElement.SignalType.PortmapDefinition() + interfaceElement.Name + ",");
 				}
 				sbText.AppendLine("");
 			}
@@ -296,7 +304,8 @@ namespace VHDLparser
 				sbText.AppendLine("      ." + interfaceInstance.data.Name + "  ( " + interfaceInstance.Name + "_vif.data ),");
 				sbText.AppendLine("      ." + interfaceInstance.req.Name +  "  ( " + interfaceInstance.Name + "_vif.req ),");
 				sbText.AppendLine("      ." + interfaceInstance.metadata.Name + "  ( " + interfaceInstance.metadata.Name.Remove(interfaceInstance.metadata.Name.Length-2, 2) + " ),");
-				if (interfaceInstance.Equals(last))
+				//Necessary to check if notInInterface list is empty, if empty last interface element should have no comma, otherwise comma is necessary for proceeding not in interface element.
+				if (interfaceInstance.Equals(last) && (!Source.Portmap.NotInInterface.Any()))
 					sbText.AppendLine("      ." + interfaceInstance.ack.Name + "  ( " + interfaceInstance.Name + "_vif.ack )");
 				else 
 					sbText.AppendLine("      ." + interfaceInstance.ack.Name + "  ( " + interfaceInstance.Name + "_vif.ack ),");
