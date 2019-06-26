@@ -76,6 +76,7 @@ namespace VHDLparser
 						{
 							foreach (string entry in lines)
 							{
+								Console.WriteLine("THE NAME OF THE SIGNAL IS: " + interfaceInstance.Name);
 								string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
 								interfaceLine = interfaceLine.Replace("${NAME}", Source.Entity);
 								//Even thought below it states "$leftREQ" and "$rightREQ" what its really requesting is the data signal.
@@ -112,6 +113,20 @@ namespace VHDLparser
 								}
 							}
 						}
+						foreach (PortInterfaceElement element in Source.Portmap.NotInInterface){
+							if (element.isUnpacked){
+								if (element.InOut == "in"){
+									sbText.AppendLine("    assign " + element.Name.Remove(element.Name.Length-2, 2) + "_p = '0;");
+									sbText.AppendLine("    assign {<<{" + element.Name.Remove(element.Name.Length-2, 2) + "}} = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
+								}
+								else if (element.InOut == "out"){
+									sbText.AppendLine("    assign " + element.Name.Remove(element.Name.Length-2, 2) + "_p = '0;");
+									sbText.AppendLine("    assign {>>{" + element.Name.Remove(element.Name.Length-2, 2) + "}} = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
+									
+								}
+								sbText.AppendLine("");
+							}
+						}
 					}
 
 					else if (line.Contains("InsertionPoint_NotTop"))
@@ -120,8 +135,8 @@ namespace VHDLparser
 						{
 							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.req = " + interfaceInstance.req.Name + ";");
 							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.data = " + interfaceInstance.data.Name + ";");
-							sbText.AppendLine("    assign {>>{" + interfaceInstance.metadata.Name.Remove(interfaceInstance.metadata.Name.Length-2, 2) + "_p}} = " + interfaceInstance.metadata.Name + ";");
-							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.metadata = " + interfaceInstance.metadata.Name.Remove(interfaceInstance.metadata.Name.Length-2, 2)+ "_p;");
+							sbText.AppendLine("    assign {>>{" + interfaceInstance.meta.Name.Remove(interfaceInstance.meta.Name.Length-2, 2) + "_p}} = " + interfaceInstance.meta.Name + ";");
+							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.metadata = " + interfaceInstance.meta.Name.Remove(interfaceInstance.meta.Name.Length-2, 2)+ "_p;");
 							sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.ack = " + interfaceInstance.ack.Name + ";");
 							sbText.AppendLine("");
 						}
@@ -158,12 +173,14 @@ namespace VHDLparser
 							line = reader.ReadLine();
 							List<string> lines = fetchInterface(line);
 							Console.WriteLine("COUNT IS::::" + lines.Count);
+							int IterationCounter = 0;
 							foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 							{
 								foreach (string entry in lines)
 								{		
 									string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
 									interfaceLine = interfaceLine.Replace("${NAME}", Source.Entity);
+									interfaceLine = interfaceLine.Replace("${IterationCounter}", IterationCounter.ToString());
 									//Even thought below it states "$leftREQ" and "$rightREQ" what its really requesting is the data signal.
 									interfaceLine = interfaceLine.Replace("$leftREQ", interfaceInstance.data.SignalType.getLeft().ToString());
 									interfaceLine = interfaceLine.Replace("$rightREQ", interfaceInstance.data.SignalType.getRight().ToString());
@@ -185,6 +202,7 @@ namespace VHDLparser
 										sbText.AppendLine(interfaceLine);
 									}
 								}
+								IterationCounter++;
 							}
 						}
 						else if (line.Contains("Type_Package_Unpacked:"))
@@ -258,9 +276,9 @@ namespace VHDLparser
 		StringBuilder DefineUnpackedTypes (StringBuilder sbText)
 		{
 			string lineBuilder = "";
-			
+			List<string> alreadyDefined = new List<string> ();
 			foreach (RecordTypeDeclaration RecordType in Source.Portmap.UnpackedList)
-			{
+			{		
 				var combined = RecordType.IdentifierList.Zip(RecordType.SubtypeList, (n, t) => new { Name = n, Type = t });
 				foreach (var element in combined) 
 				{
@@ -269,7 +287,12 @@ namespace VHDLparser
 					//	if (element.Type.getType() == "EnumerationType")
 						//	sbText.AppendLine("typedef enum " + element.Type.PortmapDefinition() + element.Type.getIdentifier()+ ";");
 						//else
-							sbText.AppendLine("typedef" + element.Type.PortmapDefinition() + element.Type.getIdentifier()+ ";");
+
+						//This prevents already defined types from being defined again.
+							if ((alreadyDefined.Find (x => x == element.Type.getIdentifier())) == null){
+								sbText.AppendLine("typedef" + element.Type.PortmapDefinition() + element.Type.getIdentifier()+ ";");
+								alreadyDefined.Add(element.Type.getIdentifier());
+							}
 					}
 			
 						
@@ -303,7 +326,7 @@ namespace VHDLparser
 			{
 				sbText.AppendLine("      ." + interfaceInstance.data.Name + "  ( " + interfaceInstance.Name + "_vif.data ),");
 				sbText.AppendLine("      ." + interfaceInstance.req.Name +  "  ( " + interfaceInstance.Name + "_vif.req ),");
-				sbText.AppendLine("      ." + interfaceInstance.metadata.Name + "  ( " + interfaceInstance.metadata.Name.Remove(interfaceInstance.metadata.Name.Length-2, 2) + " ),");
+				sbText.AppendLine("      ." + interfaceInstance.meta.Name + "  ( " + interfaceInstance.meta.Name.Remove(interfaceInstance.meta.Name.Length-2, 2) + " ),");
 				//Necessary to check if notInInterface list is empty, if empty last interface element should have no comma, otherwise comma is necessary for proceeding not in interface element.
 				if (interfaceInstance.Equals(last) && (!Source.Portmap.NotInInterface.Any()))
 					sbText.AppendLine("      ." + interfaceInstance.ack.Name + "  ( " + interfaceInstance.Name + "_vif.ack )");
@@ -317,14 +340,21 @@ namespace VHDLparser
 
 			foreach (PortInterfaceElement UnknownSignal in Source.Portmap.NotInInterface)
 			{
+				string lineBuilder = "";
+				lineBuilder += "      ." + UnknownSignal.Name + "        (";
+				if (UnknownSignal.isUnpacked){
+					lineBuilder += UnknownSignal.Name.Remove(UnknownSignal.Name.Length-2, 2);
+				}
 				if (UnknownSignal.Equals(Source.Portmap.NotInInterface.Last())){
-					sbText.AppendLine("      ." + UnknownSignal.Name + "        ()");
+					lineBuilder += ")";
+					sbText.AppendLine(lineBuilder);
 					sbText.AppendLine("");
 				}
-				else 
-					sbText.AppendLine("      ." + UnknownSignal.Name + "        (),");	
+				else{
+					lineBuilder += "),";
+					sbText.AppendLine(lineBuilder);
+				}
 			}
-
 
 			return sbText;
 

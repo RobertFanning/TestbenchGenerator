@@ -12,7 +12,7 @@ namespace VHDLparser.ParserNodes
 	//type RAM is array (0 to 31) of integer range 0 to 255;
 	public class ArrayTypeDeclaration : SignalType
 	{
-		public ArrayTypeDeclaration(string identifier, string from, string to, string subtype_indication)
+		public ArrayTypeDeclaration(string identifier, string from, string to, SignalType subtype)
 		{
 			if (identifier == null) throw new ArgumentNullException("indentifier");
 			if (from == null) throw new ArgumentNullException("ArrayType_indication");
@@ -20,8 +20,10 @@ namespace VHDLparser.ParserNodes
 			fIdentifier = identifier;
 			fFrom = from;
 			fTo = to;
+			fSubtype = subtype;
 		}
 
+		readonly SignalType fSubtype;
 		readonly string fIdentifier;
 	
 		public string Identifier { get { return fIdentifier; } }
@@ -67,7 +69,7 @@ namespace VHDLparser.ParserNodes
 		public override string PortmapDefinition()
         {
             // Just return it.  Too easy.
-            return ("  " + Identifier + "  ");
+            return ("  logic [" + From + ":" + To + "] [" + fSubtype.getLeft() + ":" + fSubtype.getRight() + "]  ");
         }
 	}
 }

@@ -70,34 +70,42 @@ namespace VHDLparser.ParserNodes
 
 			//Check for Handshake interface
 			foreach (string key in duplicateKeys) {
-				List<PortInterfaceElement> std_ulogic = new List<PortInterfaceElement> ();
-				PortInterfaceElement audio_rxtx_t = null;
-				PortInterfaceElement intea_info_t = null;
+				List<PortInterfaceElement> groupedInterface = new List<PortInterfaceElement> ();
+				PortInterfaceElement data = null;
+				PortInterfaceElement ready = null;
+				PortInterfaceElement metadata = null;
+				PortInterfaceElement acknowledge = null;
 				foreach (PortInterfaceElement element in fExpressions){
 					if (element.Name.Contains(key)) {
-						if (element.Type == "audio_rxtx_t")
-							audio_rxtx_t = element;
-						if (element.Type == "std_ulogic")
-							std_ulogic.Add (element);
-						if (element.Type == "intea_info_t")
-							intea_info_t = element;
+						if (element.Name.Contains("rdy"))
+							ready = element;
+						else if (element.Name.Contains("info"))
+							metadata = element;
+						else if (element.Name.Contains("ack"))
+							acknowledge = element;
+						else
+							data = element;
 					}
 				}
-				if (intea_info_t != null && audio_rxtx_t != null && std_ulogic.Count == 2){
+				if (data != null && ready != null && metadata != null && acknowledge != null){
 					//Bundle all interface elements
-					std_ulogic.Add (audio_rxtx_t);
-					std_ulogic.Add (intea_info_t);
-					ExtractedInterface extractInter = new ExtractedInterface (key, "handshake", std_ulogic);
-					extractInter.ExtractSignals();
+					groupedInterface.Add(data);
+					groupedInterface.Add(ready);
+					groupedInterface.Add(metadata);
+					groupedInterface.Add(acknowledge);
+					ExtractedInterface extractInter = new ExtractedInterface (key, "handshake", groupedInterface, data, ready, metadata, acknowledge);
 					fInterfaceList.Add (extractInter);
 					//REMOVE ALL SIGNALS THAT ARE IN INTERFACES 
-					AllSignals.RemoveAll(x => std_ulogic.Contains(x));
-					AllSignals.Remove(fClock);
-					AllSignals.Remove(fReset);
-					UnknownSignals = AllSignals.ToList();
-
+					AllSignals.RemoveAll(x => groupedInterface.Contains(x));
+					
 				}
 			}
+
+			AllSignals.Remove(fClock);
+			AllSignals.Remove(fReset);
+			UnknownSignals = AllSignals.ToList();
+
+
 		}
 
 	}

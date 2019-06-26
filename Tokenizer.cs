@@ -163,6 +163,7 @@ namespace VHDLparser {
 					return new Token (TokenType.Symbol, ExtractStoredChars ());
 				// Both ':' and ':=' are possible symbols
 				case ':':
+				case '<' :
 					StoreCurrentCharAndReadNext ();
 					if (fCurrentChar == '=') {
 						StoreCurrentCharAndReadNext ();

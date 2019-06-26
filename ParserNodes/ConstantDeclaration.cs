@@ -10,7 +10,7 @@ namespace VHDLparser.ParserNodes
 		public ConstantDeclaration(string identifier, string subtype_indication, int expression)
 		{
 			if (identifier == null) throw new ArgumentNullException("identifier");
-			if (subtype_indication == null) throw new ArgumentNullException("subtype_indication");
+			//if (subtype_indication == null) throw new ArgumentNullException("subtype_indication");
 
 			fIdentifier = identifier;
 			fSubtype = subtype_indication;
