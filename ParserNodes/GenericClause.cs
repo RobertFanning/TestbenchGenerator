@@ -7,16 +7,16 @@ namespace VHDLparser.ParserNodes
 	/// <summary>Represents a for-loop.</summary>
 	public class GenericClause : Clause
 	{
-		public GenericClause(InterfaceList genericExpressions)
+		public GenericClause(List<ConstantDeclaration> constantsList)
 		{
-			if (genericExpressions == null) throw new ArgumentNullException("portExpressions");
-			fGenerics = genericExpressions;
+			if (constantsList == null) throw new ArgumentNullException("portExpressions");
+			fGenerics = constantsList;
 		}
 
-		readonly InterfaceList fGenerics;
+		readonly List<ConstantDeclaration> fGenerics;
 		/// <summary>Gets the block that is executed when the condition evaluates to true.</summary>
 		/// <value>The block that is executed when the condition evaluates to true.</value>
-		public InterfaceList Generics { get { return fGenerics; } }
+		public List<ConstantDeclaration> Generics { get { return fGenerics; } }
 
 	}
 

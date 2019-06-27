@@ -8,7 +8,7 @@ namespace VHDLparser.ParserNodes
 	/// <summary>Represents a for-loop.</summary>
 	public class ExtractedInterface : Clause
 	{
-		public ExtractedInterface(string name, string InterfaceType, List<PortInterfaceElement> portExpressions, PortInterfaceElement dataSig, PortInterfaceElement ready, PortInterfaceElement metadata, PortInterfaceElement acknowledge)
+		public ExtractedInterface(string name, string InterfaceType, List<PortInterfaceElement> portExpressions, PortInterfaceElement dataSig, PortInterfaceElement ready, PortInterfaceElement metadata, PortInterfaceElement acknowledge, Boolean Array)
 		{
 			
 			fExpressions = portExpressions;
@@ -18,6 +18,7 @@ namespace VHDLparser.ParserNodes
 			fack = acknowledge;
 			fdata = dataSig;
 			fmetadata = metadata;
+			arrayInterface = Array;
 			
 		}
 
@@ -44,6 +45,9 @@ namespace VHDLparser.ParserNodes
 
 		readonly string fName;
 		public string Name { get { return fName; } }
+
+		readonly Boolean arrayInterface;
+		public Boolean isArray { get { return arrayInterface; } }
 
 	}
 }

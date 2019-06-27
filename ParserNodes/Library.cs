@@ -33,6 +33,17 @@ namespace VHDLparser.ParserNodes
             return first;
         }
 
-        
+        //Only takes 2 inputs
+        public int std_ulogic_vector(int first)
+        {
+            return first;
+        }
+
+
+        //Only takes 2 inputs
+        public int to_ufixed(int first = 0, int second = 0, int third = 0)
+        {
+            return first;
+        }
     }
 }

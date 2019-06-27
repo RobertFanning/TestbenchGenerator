@@ -11,7 +11,7 @@ namespace VHDLparser
             
             Console.WriteLine("The current time is " + DateTime.Now);
             string contents = null;
-            foreach (string file in Directory.EnumerateFiles(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ParserFiles\", "*.vhd"))
+            foreach (string file in Directory.EnumerateFiles(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ParserFiles\quantize\", "*.vhd"))
             {
                 contents += File.ReadAllText(file);
                 contents += " EndOfFileIdentifier ";
@@ -37,7 +37,7 @@ namespace VHDLparser
             Console.WriteLine("Accessing list item: " + lParser.Portmap.Expressions[0].Name);
 
             string TemplateIn = @"C:\Users\rtfa\Documents\Templates\tmpl_uvm_module_testbench\";
-            string TemplateOut = @"C:\Users\rtfa\Desktop\predict_tb_generated\";
+            string TemplateOut = @"C:\Users\rtfa\Desktop\predict_tb_generated\quantize\ROBERT\";
             string InterfaceIn = @"C:\Users\rtfa\Documents\Templates\Interfaces\";
 
 

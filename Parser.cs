@@ -20,7 +20,7 @@ namespace VHDLparser
 		// lib of type MyLibrary contains the operations of all possible predefined VHDL functions.
 		MyLibrary lib;
 
-		SubtypeDeclaration[] PredefinedTypes = { new SubtypeDeclaration ("std_ulogic", new SubtypeIndication ("std_ulogic", 0, 0))};
+		SubtypeDeclaration[] PredefinedTypes = { new SubtypeDeclaration ("std_ulogic", new SubtypeIndication ("std_ulogic", 0, 0)), new SubtypeDeclaration ("natural", new SubtypeIndication ("natural", 0, 0))};
 
 		public SubtypeDeclaration[] Predefined { get { return PredefinedTypes; } }
 
@@ -337,7 +337,7 @@ namespace VHDLparser
 		}
 
 		ConstantDeclaration ParseConstantDeclaration () {
-			ReadNextToken (); //skip constant
+			fCurrentToken = fTokenizer.SkipIfPresent (TokenType.Word, "constant");
 
 			string identifier = fCurrentToken.Value;
 
@@ -363,17 +363,32 @@ namespace VHDLparser
 			}
 			else {
 				// In a package, a constant may be deferred. This means its value is defined in the package body. the value may be changed by re-analysing only the package body. we do not want this
-				if (!fCurrentToken.Equals (TokenType.Symbol, ":=")) {
-					throw new ParserException ("Constants value definition must not be deferred to body");
+				if (fCurrentToken.Equals (TokenType.Word, "range")) {
+					ReadNextToken();
+					Node left = ParseExpression ();
+					fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "to");
+					Node right = ParseExpression ();
+					var bitsRight = Math.Log((right.Eval()+1), 2);
+					var bitsLeft = Math.Log((left.Eval()+1), 2);
+					ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, (int)Math.Ceiling(bitsRight) - (int)Math.Ceiling(bitsLeft));
+					ConstantList.Add (ParsedConstant);
+					fCurrentToken = fTokenizer.SkipIfPresent (TokenType.Symbol, ";");
+					Console.WriteLine("CURRENT VALE IS::" +fCurrentToken.Value);
+					return ParsedConstant;
 				}
+				else if (fCurrentToken.Equals (TokenType.Symbol, ":=")) {
+					ReadNextToken ();
 
-				ReadNextToken ();
-
-				Node result = ParseExpression ();
-				ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, result.Eval ());
-				ConstantList.Add (ParsedConstant);
-				ReadNextToken ();
-				return ParsedConstant;
+					Node result = ParseExpression ();
+					Console.WriteLine("Attempted to add constant by the name of:   " + identifier);
+					ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, result.Eval ());
+					Console.WriteLine("Added:   " + ParsedConstant.Identifier);
+					ConstantList.Add (ParsedConstant);
+					ReadNextToken ();
+					return ParsedConstant;
+					}
+				else
+					throw new ParserException ("Constants value definition must not be deferred to body");
 			}
 
 		}
@@ -530,46 +545,47 @@ namespace VHDLparser
 		}
 
 		GenericClause ParseGenericClause () {
-			ReadNextToken (); // skip 'port'
+			ReadNextToken (); // skip 'generic'
 			ReadNextToken (); // skip '('
-			List<InterfaceElement> lInterfaceElements = new List<InterfaceElement> ();
-			InterfaceElement lInterfaceElement;
+			List<ConstantDeclaration> constantsList = new List<ConstantDeclaration> ();
+			ConstantDeclaration constant;
 			CheckForUnexpectedEndOfSource ();
 			while (!fCurrentToken.Equals (TokenType.Symbol, ")")) {
-				if ((lInterfaceElement = ParseGenericInterfaceElement ()) != null)
-					lInterfaceElements.Add (lInterfaceElement);
+				if ((constant = ParseConstantDeclaration ()) != null)
+					constantsList.Add (constant);
 				else throw new ParserException ("Unexpected end of source.");
 			}
 
 			ReadNextToken (); // skip ')'
 			ReadNextToken (); // skip ';'
 
-			InterfaceList GenericList = new InterfaceList (lInterfaceElements);
-
-			return new GenericClause (GenericList);
+			return new GenericClause (constantsList);
 		}
 
-		GenericInterfaceElement ParseGenericInterfaceElement () {
+		// GenericInterfaceElement ParseGenericInterfaceElement () {
 
-			string genericName = fCurrentToken.Value;
+		// 	string genericName = fCurrentToken.Value;
 
-			ReadNextToken ();
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":");
+		// 	ReadNextToken ();
+		// 	fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":");
 
-			string type = fCurrentToken.Value;
+		// 	string type = fCurrentToken.Value;
 
-			ReadNextToken ();
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":=");
+		// 	ReadNextToken ();
+		// 	//fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":=");
+		// 	if (fCurrentToken.Value == ":="){
+		// 		ReadNextToken ();
+		// 		string value = fCurrentToken.Value;
 
-			string value = fCurrentToken.Value;
+		// 		ReadNextToken (); // skip VALUE
 
-			ReadNextToken (); // skip VALUE
+		// 		if (fCurrentToken.Equals (TokenType.Symbol, ";"))
+		// 			ReadNextToken (); // skip ';'
 
-			if (fCurrentToken.Equals (TokenType.Symbol, ";"))
-				ReadNextToken (); // skip ';'
-
-			return new GenericInterfaceElement (genericName, type, value);
-		}
+		// 		return new GenericInterfaceElement (genericName, type, value);
+		// 	}
+		// 	else if ()
+		// }
 
 		PortClause ParsePortClause () {
 
@@ -888,7 +904,12 @@ namespace VHDLparser
 				} 
 				else if (!fCurrentToken.Equals (TokenType.Symbol, "(")) 
 				{
-					if (ConstantList.Any (x => x.Identifier == name.ToUpper())){
+					if (ConstantList.Any (x => x.Identifier == name)){
+						ConstantDeclaration result = ConstantList.Find (x => x.Identifier == name);
+						var node = new NodeNumber (result.Value);
+						return node;
+					}
+					else if (ConstantList.Any (x => x.Identifier == name.ToUpper())){
 						ConstantDeclaration result = ConstantList.Find (x => x.Identifier == name.ToUpper());
 						var node = new NodeNumber (result.Value);
 						return node;
@@ -899,6 +920,7 @@ namespace VHDLparser
 						return node;
 					}
 					else
+						Console.WriteLine("CONSTANT VALUE IS: " + name);
 						throw new ParserException ("Constant value is unknown.");
 						
 					

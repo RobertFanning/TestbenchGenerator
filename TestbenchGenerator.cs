@@ -71,12 +71,18 @@ namespace VHDLparser
 					{
 						line = reader.ReadLine();
 						List<string> lines = fetchInterface(line);
+						List<string> arrayLines = fetchInterface(line + "_array");
+						List<string> generateLines = new List<string> (); 
+						
 						Console.WriteLine("COUNT IS::::" + lines.Count);
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
-							foreach (string entry in lines)
+							if (interfaceInstance.isArray && arrayLines != null)
+								generateLines = arrayLines;
+							else 
+								generateLines = lines;
+							foreach (string entry in generateLines)
 							{
-								Console.WriteLine("THE NAME OF THE SIGNAL IS: " + interfaceInstance.Name);
 								string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
 								interfaceLine = interfaceLine.Replace("${NAME}", Source.Entity);
 								//Even thought below it states "$leftREQ" and "$rightREQ" what its really requesting is the data signal.
@@ -90,28 +96,40 @@ namespace VHDLparser
 					{
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
-							if (interfaceInstance.InOut == "in")
-								sbText.AppendLine("      " + interfaceInstance.Name + "_vif.metadata = '0;");
+							if (interfaceInstance.InOut == "in") {
+								if (interfaceInstance.isArray){
+									sbText.AppendLine("for (genvar i = 0; i < NUM_SBLKS; i++) begin");
+									sbText.AppendLine("      " + interfaceInstance.Name + "_vif[i].metadata = '0;");
+									sbText.AppendLine("end");
+								}
+								else
+									sbText.AppendLine("        " + interfaceInstance.Name + "_vif.metadata = '0;");
+							}
 						}
 					}
 					else if (line.Contains("InsertionPoint_StreamUnpacked"))
 					{
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
+							if (interfaceInstance.isArray)
+								sbText.AppendLine("for (genvar i = 0; i" + "; i++) begin");
 							foreach (PortInterfaceElement element in interfaceInstance.Expressions) {
 								if (element.isUnpacked){
-									if (interfaceInstance.InOut == "in"){
-										sbText.AppendLine("    assign " + element.Name.Remove(element.Name.Length-2, 2) + "_p = " + interfaceInstance.Name + "_vif.metadata;");
-										sbText.AppendLine("    assign {<<{" + element.Name.Remove(element.Name.Length-2, 2) + "}} = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
-									}
-									else if (interfaceInstance.InOut == "out"){
-										sbText.AppendLine("    assign {>>{" + element.Name.Remove(element.Name.Length-2, 2) + "_p}} = " + element.Name.Remove(element.Name.Length-2, 2) + ";");
-										sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.metadata = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
-										
-									}
-									sbText.AppendLine("");
+										if (interfaceInstance.InOut == "in"){
+											sbText.AppendLine("    assign " + element.Name.Remove(element.Name.Length-2, 2) + "_p = " + interfaceInstance.Name + "_vif.metadata;");
+											sbText.AppendLine("    assign {<<{" + element.Name.Remove(element.Name.Length-2, 2) + "}} = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
+										}
+										else if (interfaceInstance.InOut == "out"){
+											sbText.AppendLine("    assign {>>{" + element.Name.Remove(element.Name.Length-2, 2) + "_p}} = " + element.Name.Remove(element.Name.Length-2, 2) + ";");
+											sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.metadata = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
+										}
 								}
 							}
+							if (interfaceInstance.isArray)
+								sbText.AppendLine("end");
+							
+							sbText.AppendLine("");
+							
 						}
 						foreach (PortInterfaceElement element in Source.Portmap.NotInInterface){
 							if (element.isUnpacked){

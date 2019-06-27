@@ -75,6 +75,7 @@ namespace VHDLparser.ParserNodes
 				PortInterfaceElement ready = null;
 				PortInterfaceElement metadata = null;
 				PortInterfaceElement acknowledge = null;
+				Boolean arrayInterface;
 				foreach (PortInterfaceElement element in fExpressions){
 					if (element.Name.Contains(key)) {
 						if (element.Name.Contains("rdy"))
@@ -89,11 +90,16 @@ namespace VHDLparser.ParserNodes
 				}
 				if (data != null && ready != null && metadata != null && acknowledge != null){
 					//Bundle all interface elements
+					if (data.Type.Contains("arr") && ready.Type.Contains("arr") && metadata.Type.Contains("arr")  && acknowledge.Type.Contains("arr"))
+						arrayInterface = true;
+					else
+						arrayInterface = false;
+						
 					groupedInterface.Add(data);
 					groupedInterface.Add(ready);
 					groupedInterface.Add(metadata);
 					groupedInterface.Add(acknowledge);
-					ExtractedInterface extractInter = new ExtractedInterface (key, "handshake", groupedInterface, data, ready, metadata, acknowledge);
+					ExtractedInterface extractInter = new ExtractedInterface (key, "handshake", groupedInterface, data, ready, metadata, acknowledge, arrayInterface);
 					fInterfaceList.Add (extractInter);
 					//REMOVE ALL SIGNALS THAT ARE IN INTERFACES 
 					AllSignals.RemoveAll(x => groupedInterface.Contains(x));
