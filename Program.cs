@@ -11,14 +11,14 @@ namespace VHDLparser
             
             Console.WriteLine("The current time is " + DateTime.Now);
             string contents = null;
-            foreach (string file in Directory.EnumerateFiles(@"C:\Users\rober\Documents\VHDLparser\ParserFiles\quantize\", "*.vhd"))
+            foreach (string file in Directory.EnumerateFiles(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ParserFiles\quantize\", "*.vhd"))
             {
                 contents += File.ReadAllText(file);
                 Console.WriteLine("Added file: " + file);
                 contents += " EndOfFileIdentifier ";
             }
 
-            string configTB = @"C:\Users\rober\Desktop\2706templates\Templates\Interfaces\config.sv";
+            string configTB = @"C:\Users\rtfa\Documents\Templates\Interfaces\config.sv";
 
 
             StringReader lSource = new StringReader(contents);
@@ -38,46 +38,16 @@ namespace VHDLparser
             
             Console.WriteLine("Accessing list item: " + lParser.Portmap.Expressions[0].Name);
 
-            string TemplateIn = @"C:\Users\rober\Desktop\2706templates\Templates\tmpl_uvm_module_testbench\";
-            string TemplateOut = @"C:\Users\rober\Desktop\predict_tb_generated\predict_tb_generated\OUTPUT\";
-            string InterfaceIn = @"C:\Users\rober\Desktop\2706templates\Templates\Interfaces\";
+            string TemplateIn = @"C:\Users\rtfa\Documents\Templates\tmpl_uvm_module_testbench\";
+            string TemplateOut = @"C:\Users\rtfa\Desktop\predict_tb_generated\quantize\ROBERT\";
+            string InterfaceIn = @"C:\Users\rtfa\Documents\Templates\Interfaces\";
 
 
-            TestbenchGenerator lTestbenchGenerator = new TestbenchGenerator(lParser, TemplateIn, TemplateOut, InterfaceIn);
+            TestbenchGenerator lTestbenchGenerator = new TestbenchGenerator(lParser, TemplateIn, TemplateOut, InterfaceIn, configTB);
 
 
             Console.WriteLine("GAME OVER");
 
-		}
-
-
-        List<string> configTB (string configPath)
-		{
-			string line = "";
-			List<string> lines = new List<string> ();
-
-			using (var reader = new System.IO.StreamReader(InterfacePath + "handshake_if.sv")) {
-				while ((line = reader.ReadLine()) != null) 
-				{
-					
-					if (insertionPoint == line)
-					{
-						Console.WriteLine("SEARCHING FOR ITEM:::" + insertionPoint + "GOT IN WITH:" + line);
-						line = reader.ReadLine();
-						while (!string.IsNullOrWhiteSpace(line))
-						{
-							Console.WriteLine(line);
-							lines.Add (line);
-							line = reader.ReadLine();
-						}
-						
-						return lines;
-					}
-					
-						
-				}
-			}
-			return null;
 		}
     }
 }
