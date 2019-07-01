@@ -12,7 +12,7 @@ namespace VHDLparser.ParserNodes
 	//type RAM is array (0 to 31) of integer range 0 to 255;
 	public class ArrayTypeDeclaration : SignalType
 	{
-		public ArrayTypeDeclaration(string identifier, string from, string to, SignalType subtype)
+		public ArrayTypeDeclaration(string identifier, int from, int to, SignalType subtype)
 		{
 			if (identifier == null) throw new ArgumentNullException("indentifier");
 			if (from == null) throw new ArgumentNullException("ArrayType_indication");
@@ -28,13 +28,13 @@ namespace VHDLparser.ParserNodes
 	
 		public string Identifier { get { return fIdentifier; } }
 
-		readonly string fFrom;
+		readonly int fFrom;
 
-		public string From { get { return fFrom; } }
+		public int From { get { return fFrom; } }
 
-		readonly string fTo;
+		readonly int fTo;
 
-		public string To { get { return fTo; } }
+		public int To { get { return fTo; } }
 
 		public override string getIdentifier()
         {
@@ -51,13 +51,13 @@ namespace VHDLparser.ParserNodes
 		public override int getLeft()
         {
             // Just return it.  Too easy.
-            return 0;
+            return fFrom;
         }
 
 		public override int getRight()
         {
             // Just return it.  Too easy.
-            return 0;
+            return fTo;
         }
 
 		public override Boolean isUnpacked()

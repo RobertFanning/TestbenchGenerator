@@ -98,6 +98,7 @@ namespace VHDLparser
 						{
 							if (interfaceInstance.InOut == "in") {
 								if (interfaceInstance.isArray){
+									Console.WriteLine("1   UUUUUUUUUUXXXXXXXX:  " + interfaceInstance.data.SignalType.getRight()+1);
 									sbText.AppendLine("for (genvar i = 0; i < NUM_SBLKS; i++) begin");
 									sbText.AppendLine("      " + interfaceInstance.Name + "_vif[i].metadata = '0;");
 									sbText.AppendLine("end");
@@ -112,6 +113,7 @@ namespace VHDLparser
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
 							if (interfaceInstance.isArray)
+								Console.WriteLine("2   UUUUUUUUUUXXXXXXXX:  " + (interfaceInstance.data.SignalType.getRight()+1));
 								sbText.AppendLine("for (genvar i = 0; i" + "; i++) begin");
 							foreach (PortInterfaceElement element in interfaceInstance.Expressions) {
 								if (element.isUnpacked){

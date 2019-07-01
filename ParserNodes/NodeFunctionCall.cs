@@ -43,6 +43,8 @@ namespace VHDLparser.ParserNodes
                 return to_unsigned(argVals);
             else if (_functionName == "std_ulogic_vector")
                 return std_ulogic_vector(argVals);
+            else if (_functionName == "resize")
+                return resize(argVals);
             else if (_functionName == "to_ufixed")
                 return to_ufixed(argVals);
             else
@@ -57,6 +59,12 @@ namespace VHDLparser.ParserNodes
         {
             return arguments[0];
         }
+
+        public int resize(int[] arguments)
+        {
+            return arguments[1];
+        }
+
 
         //Only takes 2 inputs
         public int to_unsigned(int[] arguments)

@@ -112,10 +112,16 @@ namespace VHDLparser
 				if (Attribute == "right")
 					return chosenType.Right;
 
+				if (Attribute == "high")
+					return ((chosenType.Right >= chosenType.Left) ? chosenType.Right : chosenType.Left);
+					
+				if (Attribute == "low")
+					return (chosenType.Right >= chosenType.Left ? chosenType.Left : chosenType.Right);
+
 				if (Attribute == "length")
 					return (Math.Abs (chosenType.Left - chosenType.Right) + 1);
 
-				throw new ParserException ("Attribute Provided is not recognised");
+				throw new ParserException ("Attribute Provided is not recognised:  " + Attribute);
 			} else if (EnumerationTypeList.Exists (x => x.Identifier == Type)) {
 				EnumerationTypeDeclaration chosenType = EnumerationTypeList.Find (x => x.Identifier == Type);
 				if (Attribute == "left")
@@ -243,6 +249,7 @@ namespace VHDLparser
 			string lLibrary = fCurrentToken.Value;
 			// The rest of the line is read until the end.
 			fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";"); 
+			Console.WriteLine("Parsed the library: "+ lLibrary);
 			// The parsed library clause is created and returned.
 			return new LibraryClause (lLibrary);
 		}
@@ -305,6 +312,7 @@ namespace VHDLparser
 			if (fCurrentToken.Type != TokenType.Word)
 				throw new ParserException ("Expected a module name.");
 
+			Console.WriteLine("AT THE BEGINNNING OF PACKAGE::::   " +fCurrentToken.Value);
 			Variable packageName = new Variable (fCurrentToken.Value);
 
 			ReadNextToken ();
@@ -322,22 +330,23 @@ namespace VHDLparser
 			}
 
 			// I have removed the two lines belows since sometimes the package definition will end with end package name; and othertimes just end name;
-			//ReadNextToken (); // skip 'end'
+			ReadNextToken (); // skip 'end'
+			Console.WriteLine("AT THE END OF PACKAGE::::   " +fCurrentToken.Value);
 			//fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, packageName.Name); // skip end {moduleName}
-			fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
+			
+			fCurrentToken = fTokenizer.SkipOver(TokenType.Word, "EndOfFileIdentifier");
 
 			ConstantList.ForEach (Console.WriteLine);
 			// Package has been parsed, now the next file can be parsed
-			fCurrentToken = fTokenizer.SkipOver(TokenType.Word, "EndOfFileIdentifier");
+			
 			foreach (ConstantDeclaration constant in ConstantList) {
 				Console.WriteLine (constant.Identifier);
 			}
 
 			return new PackageDeclaration (packageName);
 		}
-
 		ConstantDeclaration ParseConstantDeclaration () {
-			fCurrentToken = fTokenizer.SkipIfPresent (TokenType.Word, "constant");
+			ReadNextToken (); //skip constant
 
 			string identifier = fCurrentToken.Value;
 
@@ -363,38 +372,24 @@ namespace VHDLparser
 			}
 			else {
 				// In a package, a constant may be deferred. This means its value is defined in the package body. the value may be changed by re-analysing only the package body. we do not want this
-				if (fCurrentToken.Equals (TokenType.Word, "range")) {
-					ReadNextToken();
-					Node left = ParseExpression ();
-					fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "to");
-					Node right = ParseExpression ();
-					var bitsRight = Math.Log((right.Eval()+1), 2);
-					var bitsLeft = Math.Log((left.Eval()+1), 2);
-					ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, (int)Math.Ceiling(bitsRight) - (int)Math.Ceiling(bitsLeft));
-					ConstantList.Add (ParsedConstant);
-					fCurrentToken = fTokenizer.SkipIfPresent (TokenType.Symbol, ";");
-					Console.WriteLine("CURRENT VALE IS::" +fCurrentToken.Value);
-					return ParsedConstant;
-				}
-				else if (fCurrentToken.Equals (TokenType.Symbol, ":=")) {
-					ReadNextToken ();
-
-					Node result = ParseExpression ();
-					Console.WriteLine("Attempted to add constant by the name of:   " + identifier);
-					ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, result.Eval ());
-					Console.WriteLine("Added:   " + ParsedConstant.Identifier);
-					ConstantList.Add (ParsedConstant);
-					ReadNextToken ();
-					return ParsedConstant;
-					}
-				else
+				if (!fCurrentToken.Equals (TokenType.Symbol, ":=")) {
 					throw new ParserException ("Constants value definition must not be deferred to body");
+				}
+
+				ReadNextToken ();
+
+				Node result = ParseExpression ();
+				ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, result.Eval ());
+				ConstantList.Add (ParsedConstant);
+				ReadNextToken ();
+				return ParsedConstant;
 			}
 
 		}
 
 		SubtypeDeclaration ParseSubtypeDeclaration () {
 			ReadNextToken (); //skip subtype
+			Console.WriteLine("IN SUBTYPE::::" + fCurrentToken.Value);
 
 			string identifier = fCurrentToken.Value;
 			ReadNextToken (); //skip identifier
@@ -421,15 +416,19 @@ namespace VHDLparser
 
 			if (fCurrentToken.Equals (TokenType.Word, "array")) {
 				fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, "(");
-				string from = fCurrentToken.Value;
-				fCurrentToken = fTokenizer.SkipOver (TokenType.Word, "to");
-				string to = fCurrentToken.Value;
+				Node from = ParseExpression ();
+				//Used to have skip over "to" here but it can also be "downto"
+				ReadNextToken ();
+			    Node to = ParseExpression ();
 				fCurrentToken = fTokenizer.SkipOver (TokenType.Word, "of");
 				string subtypeIndication = fCurrentToken.Value;
 				fType = FindDefinedType ();
+				Console.WriteLine("FLAG "+fCurrentToken.Value);
 				fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
 
-				ArrayTypeDeclaration ParsedArrayType = new ArrayTypeDeclaration (identifier, from, to, fType);
+				ArrayTypeDeclaration ParsedArrayType = new ArrayTypeDeclaration (identifier, from.Eval(), to.Eval(), fType);
+				Console.WriteLine("Array type::: " + ParsedArrayType.Identifier);
+				Console.WriteLine(fCurrentToken.Value);
 				ArrayTypeList.Add (ParsedArrayType);
 				return ParsedArrayType;
 			} else if (fCurrentToken.Equals (TokenType.Word, "record")) {
@@ -454,6 +453,7 @@ namespace VHDLparser
 				
 
 				RecordTypeDeclaration ParsedRecordType = new RecordTypeDeclaration (identifier, identifierList, subtypeIndicationList);
+				Console.WriteLine("Successfully parsed Record type: "+ identifier);
 				RecordTypeList.Add (ParsedRecordType);
 				return ParsedRecordType;
 			} else {
@@ -545,48 +545,60 @@ namespace VHDLparser
 		}
 
 		GenericClause ParseGenericClause () {
-			ReadNextToken (); // skip 'generic'
+			ReadNextToken (); // skip 'port'
 			ReadNextToken (); // skip '('
-			List<ConstantDeclaration> constantsList = new List<ConstantDeclaration> ();
-			ConstantDeclaration constant;
+			List<InterfaceElement> lInterfaceElements = new List<InterfaceElement> ();
+			InterfaceElement lInterfaceElement;
 			CheckForUnexpectedEndOfSource ();
-			while (!fCurrentToken.Equals (TokenType.Symbol, ")")) {
-				if ((constant = ParseConstantDeclaration ()) != null)
-					constantsList.Add (constant);
+			while (!fCurrentToken.Equals (TokenType.Word, "port")) {
+				if ((lInterfaceElement = ParseGenericInterfaceElement ()) != null)
+				{
+					lInterfaceElements.Add (lInterfaceElement);
+					fCurrentToken = fTokenizer.SkipIfPresent(TokenType.Symbol, ";");
+				}
 				else throw new ParserException ("Unexpected end of source.");
 			}
+			InterfaceList GenericList = new InterfaceList (lInterfaceElements);
 
-			ReadNextToken (); // skip ')'
-			ReadNextToken (); // skip ';'
-
-			return new GenericClause (constantsList);
+			return new GenericClause (GenericList);
 		}
 
-		// GenericInterfaceElement ParseGenericInterfaceElement () {
+		GenericInterfaceElement ParseGenericInterfaceElement () 
+		{
 
-		// 	string genericName = fCurrentToken.Value;
+			string genericName = fCurrentToken.Value;
+			ReadNextToken ();
+			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":");
 
-		// 	ReadNextToken ();
-		// 	fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":");
+			string type = fCurrentToken.Value;
 
-		// 	string type = fCurrentToken.Value;
+			ReadNextToken ();
 
-		// 	ReadNextToken ();
-		// 	//fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":=");
-		// 	if (fCurrentToken.Value == ":="){
-		// 		ReadNextToken ();
-		// 		string value = fCurrentToken.Value;
+			if (fCurrentToken.Equals (TokenType.Word, "range")) 
+			{
+				ReadNextToken();
+				Node left = ParseExpression ();
+				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "to");
+				Node right = ParseExpression ();
+				var bitsRight = Math.Log((right.Eval()+1), 2);
+				var bitsLeft = Math.Log((left.Eval()+1), 2);
+				Console.WriteLine("*******************CurrentValue " + fCurrentToken.Value);
+				return new GenericInterfaceElement (genericName, type,  (int)Math.Ceiling(bitsRight) - (int)Math.Ceiling(bitsLeft));
+			}
+			else if (fCurrentToken.Equals (TokenType.Symbol, ":=")) 
+			{
+				ReadNextToken();
+				Node left = ParseExpression ();
+				
+				return new GenericInterfaceElement (genericName, type, left.Eval());
 
-		// 		ReadNextToken (); // skip VALUE
-
-		// 		if (fCurrentToken.Equals (TokenType.Symbol, ";"))
-		// 			ReadNextToken (); // skip ';'
-
-		// 		return new GenericInterfaceElement (genericName, type, value);
-		// 	}
-		// 	else if ()
-		// }
-
+			}
+			else
+			{
+				throw new ParserException ("Constants value definition must not be deferred to body");
+			}
+		}
+		
 		PortClause ParsePortClause () {
 
 			ReadNextToken (); // skip 'port'
@@ -649,7 +661,7 @@ namespace VHDLparser
 			else if ((fType = Array.Find(PredefinedTypes, item => item.Identifier == type)) != null)
 				return new PortInterfaceElement (signalName, inOut, type, fType);
 			else
-				throw new ParserException ("Signal Type is unknown. It exists neither in the Package file or in the Predifined types.");
+				throw new ParserException ("Signal Type is unknown. It exists neither in the Package file or in the Predifined types." + type);
 
 			
 
