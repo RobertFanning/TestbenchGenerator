@@ -51,6 +51,12 @@ namespace VHDLparser.ParserNodes
             return 0;
         }
 
+        public override SignalType getSignalType()
+        {
+            // Just return it.  Too easy.
+            throw new ParserException ("Error: Attempting to obtain signal type from enumeration signal. Enumeration signals have no subtype.");
+        }
+
 		public override Boolean isUnpacked()
         {
             // Just return it.  Too easy.

@@ -7,7 +7,7 @@ namespace VHDLparser.ParserNodes
 	/// <summary>Represents a function call.</summary>
 	public class PortInterfaceElement : InterfaceElement
 	{
-		public PortInterfaceElement(string name, string inout, string type, SignalType SigType)
+		public PortInterfaceElement(string name, string inout, string type, SignalType SigType, Boolean Array)
 		{
 		//	if (name == null) throw new ArgumentNullException("name");
 		//	if (inout == null) throw new ArgumentNullException("inout");
@@ -20,11 +20,14 @@ namespace VHDLparser.ParserNodes
 			fType = type;
 		    TypeSig = SigType;
 			fInputOutput = fInOut + "put";
+			arraySignal = Array;
+			fRole = "";
 		}
 
 		string fInputOutput;
 		public string InputOutput { get { return fInputOutput; } }
-
+		string fRole;
+		public string Role { get { return fRole; } }
 		readonly string fName;
 		public string Name { get { return fName; } }
 
@@ -37,7 +40,10 @@ namespace VHDLparser.ParserNodes
 		readonly SignalType TypeSig;
 
 		public SignalType SignalType { get { return TypeSig; } }
-		public Boolean isUnpacked { get { return TypeSig.isUnpacked(); } }
+
+		Boolean arraySignal;
+		public Boolean isArray { get { return arraySignal; } }
+		public Boolean isUnpacked { get { return (TypeSig.isUnpacked() || arraySignal); } }
 
 
 		// THIS IS WHERE I FINISHED TODAY
@@ -50,7 +56,11 @@ namespace VHDLparser.ParserNodes
 			else
 				return "logic";
 		}
-
+		//For asigning the role of the signal e.g. data, req, ack, metadata
+		public void setRole (string use)
+		{
+			fRole = use;
+		}
 
 	}
 }

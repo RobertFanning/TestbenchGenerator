@@ -59,6 +59,12 @@ namespace VHDLparser.ParserNodes
             return false;
         }
 
+		public override SignalType getSignalType()
+        {
+            // Just return it.  Too easy.
+            throw new ParserException ("Error: Attempting to obtain signal type from enumeration signal. Enumeration signals have no subtype.");
+        }
+
 		public override string PortmapDefinition()
         {
             if (Left != Right)

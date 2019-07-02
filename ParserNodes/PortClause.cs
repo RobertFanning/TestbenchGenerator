@@ -13,8 +13,8 @@ namespace VHDLparser.ParserNodes
 			
 			fExpressions = portExpressions;
 			fUnpackedList = Unpacked; 
-			fClock = new PortInterfaceElement(null, null, null, null);
-			fReset = new PortInterfaceElement(null, null, null, null);
+			fClock = new PortInterfaceElement(null, null, null, null, false);
+			fReset = new PortInterfaceElement(null, null, null, null, false);
 			fInterfaceList = new List<ExtractedInterface> ();
 			UnknownSignals = new List<PortInterfaceElement> ();
 		}
@@ -78,19 +78,27 @@ namespace VHDLparser.ParserNodes
 				Boolean arrayInterface;
 				foreach (PortInterfaceElement element in fExpressions){
 					if (element.Name.Contains(key)) {
-						if (element.Name.Contains("rdy"))
+						if (element.Name.Contains("rdy")){
 							ready = element;
-						else if (element.Name.Contains("info"))
+							ready.setRole("req");
+						}
+						else if (element.Name.Contains("info")){
 							metadata = element;
-						else if (element.Name.Contains("ack"))
+							metadata.setRole("metadata");
+						}
+						else if (element.Name.Contains("ack")){
 							acknowledge = element;
-						else
+							acknowledge.setRole("ack");
+						}
+						else{
 							data = element;
+							data.setRole("data");
+						}
 					}
 				}
 				if (data != null && ready != null && metadata != null && acknowledge != null){
 					//Bundle all interface elements
-					if (data.Type.Contains("arr") && ready.Type.Contains("arr") && metadata.Type.Contains("arr")  && acknowledge.Type.Contains("arr"))
+					if (data.isArray && ready.isArray && metadata.isArray  && acknowledge.isArray)
 						arrayInterface = true;
 					else
 						arrayInterface = false;

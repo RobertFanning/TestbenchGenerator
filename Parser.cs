@@ -608,41 +608,37 @@ namespace VHDLparser
 		}
 
 		PortInterfaceElement ParsePortInterfaceElement () {
-
-			string signalName = fCurrentToken.Value;
-
+			Boolean ArrayElement = false;
+			string signalName = "";
+			string inOut = "";
+			string type = "";
+			SignalType fType;
+			
+			signalName = fCurrentToken.Value;
 			ReadNextToken ();
 			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":");
-
-			string inOut = fCurrentToken.Value;
-
+			inOut = fCurrentToken.Value;
 			ReadNextToken ();
+			type = fCurrentToken.Value;
+			if (type.Contains("_arr"))
+				ArrayElement = true;
 
-			string type = fCurrentToken.Value;
-			
 			ReadNextToken (); // skip TYPE
 			if (fCurrentToken.Equals (TokenType.Symbol, ";"))
 				ReadNextToken (); // skip ';'
-			
-
-			SignalType fType;
 
 			if ((fType = RecordTypeList.Find(item => item.Identifier == type)) != null)
-				return new PortInterfaceElement (signalName, inOut, type, fType);
+				return new PortInterfaceElement (signalName, inOut, type, fType, ArrayElement);
 			else if ((fType = SubtypeList.Find(item => item.Identifier == type)) != null)
-				return new PortInterfaceElement (signalName, inOut, type, fType);
+				return new PortInterfaceElement (signalName, inOut, type, fType, ArrayElement);
 			else if ((fType = ArrayTypeList.Find(item => item.Identifier == type)) != null)
-				return new PortInterfaceElement (signalName, inOut, type, fType);
+				return new PortInterfaceElement (signalName, inOut, type, fType, ArrayElement);
 			else if ((fType = EnumerationTypeList.Find(item => item.Identifier == type)) != null)
-				return new PortInterfaceElement (signalName, inOut, type, fType);
+				return new PortInterfaceElement (signalName, inOut, type, fType, ArrayElement);
 			else if ((fType = Array.Find(PredefinedTypes, item => item.Identifier == type)) != null)
-				return new PortInterfaceElement (signalName, inOut, type, fType);
+				return new PortInterfaceElement (signalName, inOut, type, fType, ArrayElement);
 			else
 				throw new ParserException ("Signal Type is unknown. It exists neither in the Package file or in the Predifined types." + type);
-
-			
-
-			
 		}
 
 		//----------------------------------------------------------------------------------------

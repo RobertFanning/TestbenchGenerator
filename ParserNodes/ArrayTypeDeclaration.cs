@@ -23,7 +23,7 @@ namespace VHDLparser.ParserNodes
 			fSubtype = subtype;
 		}
 
-		readonly SignalType fSubtype;
+		public SignalType fSubtype;
 		readonly string fIdentifier;
 	
 		public string Identifier { get { return fIdentifier; } }
@@ -64,6 +64,12 @@ namespace VHDLparser.ParserNodes
         {
             // Just return it.  Too easy.
             return false;
+        }
+
+		public override SignalType getSignalType()
+        {
+            // Just return it.  Too easy.
+            return fSubtype;
         }
 
 		public override string PortmapDefinition()

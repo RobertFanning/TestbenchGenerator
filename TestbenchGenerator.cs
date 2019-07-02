@@ -21,7 +21,7 @@ namespace VHDLparser
 			OutputPath = Testbench;
 			InterfacePath = Interfaces;
 			configPath = configTB;
-			configuredInterfaces = new List<string> ();
+			configuredInterfaces = new List<ExtractedInterface> ();
 
 			VerifyTemplates();
 			configureTB(configPath);
@@ -35,7 +35,7 @@ namespace VHDLparser
 		string InterfacePath;
 		string configPath;
 		string[] FileNames = {"_environment_pkg.sv", "_env_config_pkg.sv", "_test_pkg.sv", "_base_test_pkg.sv", "_type_pkg.sv", "_scoreboard_pkg.sv", "_ref_model_pkg.sv"};
-		List<string> configuredInterfaces;
+		List<ExtractedInterface> configuredInterfaces;
 		void VerifyTemplates()
 		{
 			if (!File.Exists(TemplatePath + "template_bif.sv")) throw new ParserException ("Template for bif.sv missing");
@@ -52,12 +52,12 @@ namespace VHDLparser
 					{
 						PortMapSpecification (sbText);
 					}
-					else if (line.Contains("InsertionPoint_UnpackedDeclared"))
+					else if (line.Contains("InsertionPoint_UnpackedDeclared:"))
 					{
 
 						foreach (PortInterfaceElement element in Source.Portmap.Expressions)
 						{
-							if (element.isUnpacked){
+							if (element.SignalType.isUnpacked() || (element.SignalType.getSignalType().isUnpacked())){
 								sbText.AppendLine("  packed_" + element.Type + " " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
 							}
 						}
@@ -68,14 +68,43 @@ namespace VHDLparser
 								sbText.AppendLine("  " + element.Type + " " + element.Name.Remove(element.Name.Length-2, 2) + ";");
 							}
 						}
+						foreach (ExtractedInterface configuredInterface in configuredInterfaces)
+						{
+							Console.WriteLine("Searching for interface : " + configuredInterface.Name + line);
+							implementCongfiguration(configuredInterface, line, sbText);
+						}
+					}
+					else if (line.Contains("bif_configDB_interface:"))
+					{
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						{
+							if (!implementCongfiguration(interfaceInstance, line, sbText)) 
+							{	
+								if (!interfaceInstance.isArray) {
+										sbText.AppendLine("  uvm_config_db#(" + interfaceInstance.Name + "_" + interfaceInstance.Type + "_vif_t)::set(null, \"*\", \"" + Source.Entity + "_" + interfaceInstance.Name + "_vif\", " + interfaceInstance.Name + "_vif);");
+								}
+							}
+						}
+						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
+						{
+							if (!implementCongfiguration(interfaceInstance, line, sbText)) 
+							{	
+								if (interfaceInstance.isArray) {
+									sbText.AppendLine("  generate for (genvar j=0; j<" + (interfaceInstance.data.SignalType.getRight()+1) + "; j++) begin");
+    								sbText.AppendLine("    initial begin");
+									sbText.AppendLine("      uvm_config_db#(" + interfaceInstance.Name + "_" + interfaceInstance.Type + "_vif_t)::set(null, \"*\", $sformatf(\"" + Source.Entity + "_" + interfaceInstance.Name + "_vif_%0d\",j), " + interfaceInstance.Name + "_vif[j]);");
+									sbText.AppendLine("    end");
+  									sbText.AppendLine("  end endgenerate");							
+								}
+							}
+						}
 
-						
 					}
 					else if (line.Contains("Fetch_Interface:"))
 					{
 						line = reader.ReadLine();
 						List<string> lines = fetchInterface(line);
-						List<string> arrayLines = fetchInterface(line + "_array");
+						List<string> arrayLines = fetchInterface(line.Remove(line.Length-1,1) + "_array:");
 						List<string> generateLines = new List<string> (); 
 						
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
@@ -86,6 +115,7 @@ namespace VHDLparser
 									generateLines = arrayLines;
 								else 
 									generateLines = lines;
+		
 								foreach (string entry in generateLines)
 								{
 									string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
@@ -106,12 +136,12 @@ namespace VHDLparser
 							{	
 								if (interfaceInstance.InOut == "in") {
 									if (interfaceInstance.isArray){
-										sbText.AppendLine("for (genvar i = 0; i < NUM_SBLKS; i++) begin");
-										sbText.AppendLine("      " + interfaceInstance.Name + "_vif[i].metadata = '0;");
-										sbText.AppendLine("end");
+										sbText.AppendLine("      for (genvar i = 0; i < " + (interfaceInstance.data.SignalType.getRight()+1) + "; i++) begin");
+										sbText.AppendLine("      	" + interfaceInstance.Name + "_vif[i].metadata = '0;");
+										sbText.AppendLine("      end");
 									}
 									else
-										sbText.AppendLine("        " + interfaceInstance.Name + "_vif.metadata = '0;");
+										sbText.AppendLine("      " + interfaceInstance.Name + "_vif.metadata = '0;");
 								}
 							}
 						}
@@ -120,25 +150,33 @@ namespace VHDLparser
 					{
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
+							string arrayBuilder = "";
 							if (!implementCongfiguration(interfaceInstance, line, sbText)) 
 							{
 								if (interfaceInstance.isArray)
-									sbText.AppendLine("for (genvar i = 0; i < " + (interfaceInstance.data.SignalType.getRight()+1) + "; i++) begin");
+								{
+									arrayBuilder = "[i]";
+									sbText.AppendLine("    for (genvar i = 0; i < " + (interfaceInstance.data.SignalType.getRight()+1) + "; i++) begin");
+								}
 								foreach (PortInterfaceElement element in interfaceInstance.Expressions) {
-									if (element.isUnpacked){
-											if (interfaceInstance.InOut == "in"){
-												sbText.AppendLine("    assign " + element.Name.Remove(element.Name.Length-2, 2) + "_p = " + interfaceInstance.Name + "_vif.metadata;");
-												sbText.AppendLine("    assign {<<{" + element.Name.Remove(element.Name.Length-2, 2) + "}} = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
-											}
-											else if (interfaceInstance.InOut == "out"){
-												sbText.AppendLine("    assign {>>{" + element.Name.Remove(element.Name.Length-2, 2) + "_p}} = " + element.Name.Remove(element.Name.Length-2, 2) + ";");
-												sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.metadata = " + element.Name.Remove(element.Name.Length-2, 2) + "_p;");
-											}
+									if (element.SignalType.isUnpacked() || (element.SignalType.getSignalType().isUnpacked())){
+										if (interfaceInstance.InOut == "in"){
+											sbText.AppendLine("    assign " + element.Name.Remove(element.Name.Length-2, 2) + "_p" + arrayBuilder + " = " + interfaceInstance.Name + "_vif" + arrayBuilder + "." + element.Role + ";");
+											sbText.AppendLine("    assign {<<{" + element.Name.Remove(element.Name.Length-2, 2) + arrayBuilder + "}} = " + element.Name.Remove(element.Name.Length-2, 2) + "_p" + arrayBuilder + ";");
+										}
+										else if (interfaceInstance.InOut == "out"){
+											sbText.AppendLine("    assign {>>{" + element.Name.Remove(element.Name.Length-2, 2) + "_p" + arrayBuilder + "}} = " + element.Name.Remove(element.Name.Length-2, 2) + arrayBuilder + ";");
+											sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif" + arrayBuilder + "." + element.Role + " = " + element.Name.Remove(element.Name.Length-2, 2) + "_p" + arrayBuilder + ";");
+										}
+									} 
+									else if (element.isArray){
+										sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif" + arrayBuilder + "." + element.Role + " = " + element.Name.Remove(element.Name.Length-2, 2) + arrayBuilder + ";");
 									}
 								}
 								if (interfaceInstance.isArray)
-									sbText.AppendLine("end");
-								
+								{
+									sbText.AppendLine("    end");
+								}
 								sbText.AppendLine("");
 							}
 						}
@@ -162,14 +200,27 @@ namespace VHDLparser
 					{
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
+							string arrayBuilder = "";
 							if (!implementCongfiguration(interfaceInstance, line, sbText))
 							{	
-								sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.req = " + interfaceInstance.req.Name + ";");
-								sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.data = " + interfaceInstance.data.Name + ";");
-								sbText.AppendLine("    assign {>>{" + interfaceInstance.meta.Name.Remove(interfaceInstance.meta.Name.Length-2, 2) + "_p}} = " + interfaceInstance.meta.Name + ";");
-								sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.metadata = " + interfaceInstance.meta.Name.Remove(interfaceInstance.meta.Name.Length-2, 2)+ "_p;");
-								sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif.ack = " + interfaceInstance.ack.Name + ";");
+								if (interfaceInstance.isArray)
+								{
+									arrayBuilder = "[i]";
+									sbText.AppendLine("    for (genvar i = 0; i < " + (interfaceInstance.data.SignalType.getRight()+1) + "; i++) begin");
+								}
+								foreach (PortInterfaceElement element in interfaceInstance.Expressions) { 
+									if (element.SignalType.isUnpacked() || (element.SignalType.getSignalType().isUnpacked())) {
+										sbText.AppendLine("    assign {>>{" + element.Name.Remove(element.Name.Length-2, 2) + "_p" + arrayBuilder + "}} = " + element.Name + arrayBuilder + ";");
+										sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif" + arrayBuilder + "." + element.Role + " = " + element.Name.Remove(element.Name.Length-2, 2)+ "_p" + arrayBuilder + ";");
+									}
+									else
+										sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif" + arrayBuilder + "." + element.Role + " = " + element.Name.Remove(element.Name.Length-2, 2) + arrayBuilder + ";");
+								}
+								if (interfaceInstance.isArray)
+									sbText.AppendLine("    end");
+
 								sbText.AppendLine("");
+								
 							}
 						}
 					}
@@ -354,23 +405,27 @@ namespace VHDLparser
 
 		StringBuilder InstantiateDUT (StringBuilder sbText)
 		{
+			string lineBuilder = "";
 			sbText.AppendLine("      ." + Source.Portmap.Clock.Name + "  (local_clk),");
 			sbText.AppendLine("      ." + Source.Portmap.Reset.Name + "  (local_rst_n),");
 			sbText.AppendLine("");
-			ExtractedInterface last = Source.Portmap.InterfaceList.Last();
+			//ExtractedInterface last = Source.Portmap.InterfaceList.Last();
 			foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 			{
 				if (!implementCongfiguration(interfaceInstance, "      InsertionPoint_DUTConnection", sbText))
 				{
-					sbText.AppendLine("      ." + interfaceInstance.data.Name + "  ( " + interfaceInstance.Name + "_vif.data ),");
-					sbText.AppendLine("      ." + interfaceInstance.req.Name +  "  ( " + interfaceInstance.Name + "_vif.req ),");
-					sbText.AppendLine("      ." + interfaceInstance.meta.Name + "  ( " + interfaceInstance.meta.Name.Remove(interfaceInstance.meta.Name.Length-2, 2) + " ),");
-					//Necessary to check if notInInterface list is empty, if empty last interface element should have no comma, otherwise comma is necessary for proceeding not in interface element.
-					if (interfaceInstance.Equals(last) && (!Source.Portmap.NotInInterface.Any()))
-						sbText.AppendLine("      ." + interfaceInstance.ack.Name + "  ( " + interfaceInstance.Name + "_vif.ack )");
-					else 
-						sbText.AppendLine("      ." + interfaceInstance.ack.Name + "  ( " + interfaceInstance.Name + "_vif.ack ),");
-					
+					foreach (PortInterfaceElement element in interfaceInstance.Expressions) { 
+						lineBuilder = "";
+						if (element.isUnpacked)
+							lineBuilder += ("      ." + element.Name + "  ( " + element.Name.Remove(element.Name.Length-2, 2) + " )");
+						else
+							lineBuilder += ("      ." + element.Name + "  ( " + interfaceInstance.Name + "_vif." + element.Role + " )");
+						
+						if (interfaceInstance.Equals(Source.Portmap.InterfaceList.Last()) && element.Equals(interfaceInstance.Expressions.Last()) && (!Source.Portmap.NotInInterface.Any()))
+							sbText.AppendLine(lineBuilder);
+						else
+						 	sbText.AppendLine(lineBuilder + ",");
+					}
 					sbText.AppendLine("");
 				}		
 				
@@ -378,7 +433,7 @@ namespace VHDLparser
 
 			foreach (PortInterfaceElement UnknownSignal in Source.Portmap.NotInInterface)
 			{
-				string lineBuilder = "";
+				lineBuilder = "";
 				lineBuilder += "      ." + UnknownSignal.Name + "        (";
 				if (UnknownSignal.isUnpacked){
 					lineBuilder += UnknownSignal.Name.Remove(UnknownSignal.Name.Length-2, 2);
@@ -402,15 +457,17 @@ namespace VHDLparser
 		{	
 			Boolean configOccured = false;		
 			string line = "";
+			string if_name = interfaceInstance.Name.Trim();
+			string ip = insertionPoint.Trim();
 			using (var reader = new System.IO.StreamReader(configPath)) {
 				while ((line = reader.ReadLine()) != null) 
 				{
-					if (line == "begin " + interfaceInstance.Name)
+					if (line == "begin " + if_name)
 					{ 
 						
-						while ((line = reader.ReadLine()) != "end " + interfaceInstance.Name) 
+						while ((line = reader.ReadLine()) != "end " + if_name) 
 						{
-							if (line == insertionPoint)
+							if (line == ip)
 							{
 								configOccured = true;
 								line = reader.ReadLine();
@@ -449,7 +506,6 @@ namespace VHDLparser
 							{
 								line = reader.ReadLine().Trim();
 								InterfaceName = line;
-								configuredInterfaces.Add(InterfaceName);
 							}
 							if (line.Equals("InterfaceType:"))
 							{
@@ -485,7 +541,8 @@ namespace VHDLparser
 								}
 							}
 						
-							ExtractedInterface extracted = new ExtractedInterface (InterfaceName, InterfaceType, Signals, new PortInterfaceElement ("", InterfaceDirection, "", new nullType()), new PortInterfaceElement ("", InterfaceDirection, "", new nullType()), new PortInterfaceElement ("", InterfaceDirection, "", new nullType()), new PortInterfaceElement ("", InterfaceDirection, "", new nullType()), false);
+							ExtractedInterface extracted = new ExtractedInterface (InterfaceName, InterfaceType, Signals, new PortInterfaceElement ("", InterfaceDirection, "", new nullType(), false), new PortInterfaceElement ("", InterfaceDirection, "", new nullType(), false), new PortInterfaceElement ("", InterfaceDirection, "", new nullType(), false), new PortInterfaceElement ("", InterfaceDirection, "", new nullType(), false), false);
+							configuredInterfaces.Add(extracted);
 							Source.Portmap.InterfaceList.Add(extracted);
 						}
 						else 

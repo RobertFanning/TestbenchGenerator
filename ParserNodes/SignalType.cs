@@ -14,5 +14,6 @@ namespace VHDLparser.ParserNodes
 		public abstract string getIdentifier();
 		public abstract Boolean isUnpacked();
 		public abstract string PortmapDefinition();
+		public abstract SignalType getSignalType();
 	}
 }
