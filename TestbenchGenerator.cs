@@ -52,6 +52,13 @@ namespace VHDLparser
 					{
 						PortMapSpecification (sbText);
 					}
+					else if (line.Contains("IncludePackages:"))
+					{
+						foreach (ExtractedInterface configuredInterface in configuredInterfaces)
+						{
+							implementCongfiguration(configuredInterface, line, sbText);
+						}
+					}
 					else if (line.Contains("InsertionPoint_UnpackedDeclared:"))
 					{
 
@@ -85,6 +92,7 @@ namespace VHDLparser
 								}
 							}
 						}
+						sbText.AppendLine("    end");
 						foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 						{
 							if (!implementCongfiguration(interfaceInstance, line, sbText)) 
@@ -123,6 +131,14 @@ namespace VHDLparser
 									//Even thought below it states "$leftREQ" and "$rightREQ" what its really requesting is the data signal.
 									interfaceLine = interfaceLine.Replace("$leftREQ", interfaceInstance.data.SignalType.getLeft().ToString());
 									interfaceLine = interfaceLine.Replace("$rightREQ", interfaceInstance.data.SignalType.getRight().ToString());
+									interfaceLine = interfaceLine.Replace("${array_emptyBrackets}", interfaceInstance.isArray ? "[]" : "");
+									interfaceLine = interfaceLine.Replace("${array_sizeBrackets}", interfaceInstance.isArray ? "[" + (interfaceInstance.data.SignalType.getRight()+1).ToString() + "]" : "");
+									interfaceLine = interfaceLine.Replace("${array_filledBrackets}", interfaceInstance.isArray ? "[i]" : "");
+									interfaceLine = interfaceLine.Replace("${sformatOpen}", interfaceInstance.isArray ? "$sformatf(" : "");
+									interfaceLine = interfaceLine.Replace("${sformatClose}", interfaceInstance.isArray ? ",i)" : "");
+									interfaceLine = interfaceLine.Replace("${forloop_begin}", interfaceInstance.isArray ? ("for (int i = 0; i < " + (interfaceInstance.data.SignalType.getRight()+1).ToString() + "; i++) begin") : "");
+									interfaceLine = interfaceLine.Replace("${forloop_end}", interfaceInstance.isArray ? "end" : "");
+									interfaceLine = interfaceLine.Replace("${%0d}", interfaceInstance.isArray ? "_%0d" : "");
 									sbText.AppendLine(interfaceLine);
 								}
 							}
@@ -214,7 +230,7 @@ namespace VHDLparser
 										sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif" + arrayBuilder + "." + element.Role + " = " + element.Name.Remove(element.Name.Length-2, 2)+ "_p" + arrayBuilder + ";");
 									}
 									else
-										sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif" + arrayBuilder + "." + element.Role + " = " + element.Name.Remove(element.Name.Length-2, 2) + arrayBuilder + ";");
+										sbText.AppendLine("    assign " + interfaceInstance.Name + "_vif" + arrayBuilder + "." + element.Role + " = " + element.Name + arrayBuilder + ";");
 								}
 								if (interfaceInstance.isArray)
 									sbText.AppendLine("    end");
@@ -255,37 +271,56 @@ namespace VHDLparser
 						{
 							line = reader.ReadLine();
 							List<string> lines = fetchInterface(line);
+							List<string> arrayLines = fetchInterface(line.Remove(line.Length-1,1) + "_array:");
+							List<string> generateLines = new List<string> ();
 							int IterationCounter = 0;
 							foreach (ExtractedInterface interfaceInstance in Source.Portmap.InterfaceList)
 							{
-								if (!implementCongfiguration(interfaceInstance, line, sbText)) 
+								if (!implementCongfiguration(interfaceInstance, line, sbText) && (lines != null || arrayLines != null)) 
 								{	
-									foreach (string entry in lines)
+									if (interfaceInstance.isArray && arrayLines != null)
+										generateLines = arrayLines;
+									else 
+										generateLines = lines;
+
+									foreach (string entry in generateLines)
 									{	
 										
 										string interfaceLine = entry.Replace("${if_name}", interfaceInstance.Name);
 										interfaceLine = interfaceLine.Replace("${NAME}", Source.Entity);
+										interfaceLine = interfaceLine.Replace("${arraySize}", (interfaceInstance.data.SignalType.getRight()+1).ToString());
 										interfaceLine = interfaceLine.Replace("${IterationCounter}", IterationCounter.ToString());
 										//Even thought below it states "$leftREQ" and "$rightREQ" what its really requesting is the data signal.
 										interfaceLine = interfaceLine.Replace("$leftREQ", interfaceInstance.data.SignalType.getLeft().ToString());
 										interfaceLine = interfaceLine.Replace("$rightREQ", interfaceInstance.data.SignalType.getRight().ToString());
+										interfaceLine = interfaceLine.Replace("${array_emptyBrackets}", interfaceInstance.isArray ? "[]" : "");
+										interfaceLine = interfaceLine.Replace("${array_sizeBrackets}", interfaceInstance.isArray ? "[" + (interfaceInstance.data.SignalType.getRight()+1).ToString() + "]" : "");
+										interfaceLine = interfaceLine.Replace("${array_filledBrackets}", interfaceInstance.isArray ? "[i]" : "");
+										interfaceLine = interfaceLine.Replace("${sformatOpen}", interfaceInstance.isArray ? "$sformatf(" : "");
+										interfaceLine = interfaceLine.Replace("${sformatClose}", interfaceInstance.isArray ? ",i)" : "");
+										interfaceLine = interfaceLine.Replace("${forloop_begin}", interfaceInstance.isArray ? ("for (int i = 0; i < " + (interfaceInstance.data.SignalType.getRight()+1).ToString() + "; i++) begin") : "");
+										interfaceLine = interfaceLine.Replace("${forloop_end}", interfaceInstance.isArray ? "end" : "");
+										interfaceLine = interfaceLine.Replace("${%0d}", interfaceInstance.isArray ? "_%0d" : "");
+										//Only for _environement_pkg.sv
 										if (interfaceLine[interfaceLine.Length-1] == ',' && interfaceInstance.Equals(Source.Portmap.InterfaceList.Last()))
 											interfaceLine = interfaceLine.Remove(interfaceLine.Length-1, 1);
-										//Only for _environement_pkg.sv
 										if (interfaceInstance.InOut == "in" && !line.Contains("OnlyOutput")){
 											interfaceLine = interfaceLine.Replace("${ProducerConsumer}", "producer");
 											interfaceLine = interfaceLine.Replace("${ProdCons}", "prod");
 											interfaceLine = interfaceLine.Replace("${InitiatorTarget}", "initiator");
 											interfaceLine = interfaceLine.Replace("${MasterSlave}", "MASTER");
-											sbText.AppendLine(interfaceLine);
+											if(interfaceLine.Trim() != "")
+												sbText.AppendLine(interfaceLine);
 										}	
 										else if (interfaceInstance.InOut == "out" && !line.Contains("OnlyInput")){
 											interfaceLine = interfaceLine.Replace("${ProducerConsumer}", "consumer");
 											interfaceLine = interfaceLine.Replace("${ProdCons}", "cons");
 											interfaceLine = interfaceLine.Replace("${InitiatorTarget}", "target");
 											interfaceLine = interfaceLine.Replace("${MasterSlave}", "SLAVE");
-											sbText.AppendLine(interfaceLine);
+											if(interfaceLine.Trim() != "")
+												sbText.AppendLine(interfaceLine);
 										}
+										
 									}
 									IterationCounter++;
 								}
@@ -364,7 +399,11 @@ namespace VHDLparser
 		{
 			string lineBuilder = "";
 			List<string> alreadyDefined = new List<string> ();
-			foreach (RecordTypeDeclaration RecordType in Source.Portmap.UnpackedList)
+			if (Source.Portmap.UnpackedList.Any (x => x.getIdentifier() == "intea_info_t"))
+				Console.WriteLine("SUCCESSSSSS");
+			List<RecordTypeDeclaration> orderedList = Source.Portmap.UnpackedList;
+			orderedList = orderDependencies(orderedList);
+			foreach (RecordTypeDeclaration RecordType in orderedList)
 			{		
 				var combined = RecordType.IdentifierList.Zip(RecordType.SubtypeList, (n, t) => new { Name = n, Type = t });
 				foreach (var element in combined) 
@@ -377,7 +416,9 @@ namespace VHDLparser
 
 						//This prevents already defined types from being defined again.
 							if ((alreadyDefined.Find (x => x == element.Type.getIdentifier())) == null){
-								sbText.AppendLine("typedef" + element.Type.PortmapDefinition() + element.Type.getIdentifier()+ ";");
+								//This ensures we use the packed version already created.
+								if (!element.Type.isUnpacked())
+									sbText.AppendLine("typedef" + element.Type.PortmapDefinition() + element.Type.getIdentifier()+ "_def;"); //appending def to each typedef to prevent duplication between type package and vhdl package which leads to error. "mult_result_t cannot be resolved, as it is defined in package quantize_type_pkg and package quantization_test_p which are both wild card imported"
 								alreadyDefined.Add(element.Type.getIdentifier());
 							}
 					}
@@ -386,22 +427,86 @@ namespace VHDLparser
 				}
 
 				sbText.AppendLine("typedef struct packed {");
-				
+				//Need to make sure the packed version of unpacked types are declared before they are used in the packed version of another unpacked type.
 				foreach (var element in combined) 
 				{
 					if (Array.FindIndex(Source.Predefined, x => x.getIdentifier() == element.Type.getIdentifier()) > -1)
 						sbText.AppendLine(element.Type.PortmapDefinition() + " " + element.Name + ";");
-					else 
-						sbText.AppendLine("  " +element.Type.getIdentifier() + " " + element.Name + ";");
+					else if (element.Type.isUnpacked())
+						sbText.AppendLine("  packed_" +element.Type.getIdentifier() + " " + element.Name + ";");
+					else
+						sbText.AppendLine("  " +element.Type.getIdentifier() + "_def " + element.Name + ";");
 				}
 				sbText.AppendLine("} packed_" + RecordType.getIdentifier() + ";" );
 			}
+			foreach (PortInterfaceElement element in Source.Portmap.Expressions)
+			{
+				if (element.SignalType.getType() == "ArrayType" && element.SignalType.getSignalType().isUnpacked())
+					sbText.AppendLine("  typedef  packed_" + element.SignalType.getSignalType().getIdentifier() + " [" + element.SignalType.getLeft() + ":" + element.SignalType.getRight() + "] "+  "packed_" + element.SignalType.getIdentifier() + ";");
+			}
+
 			
 
 
 			return sbText;
 
 		}
+
+		List<RecordTypeDeclaration> orderDependencies (List<RecordTypeDeclaration> unorganisedList)
+		{
+			bool stillGoing = true;
+			while (stillGoing)
+			{
+				stillGoing = false;
+				for (int i = 0; i < unorganisedList.Count-1; i++)
+				{
+					RecordTypeDeclaration x = unorganisedList[i];
+					RecordTypeDeclaration y = unorganisedList[i + 1];
+					Console.WriteLine("IDENTIFIERS ARE::::" + x.getIdentifier() + y.getIdentifier());
+					if (x.SubtypeList.Any (q => q.getIdentifier() == y.getIdentifier()))
+					{
+						unorganisedList[i] = y;
+						unorganisedList[i + 1] = x;
+						stillGoing = true;
+						Console.WriteLine("HUHUHUHUHUHUHHUH");
+					}
+				}
+			}
+			return unorganisedList;
+		}
+
+
+
+
+			// foreach (RecordTypeDeclaration unpackedType in unorganisedList)
+			// {
+			// 	int indexOfLowestDependency;
+			// 	int cnt1 = 0;
+			// 	for (int j = 0; j <= unorganisedList.Length - 1; j++) 
+			// 	{
+			// 		for (int i = 0; i <= unorganisedList.Length - 1; i++) 
+			// 		{
+			// 			if (unorganisedList[j].SubtypeList.Any (x => x.getIdentifier() == unorganisedList[i].getIdentifier()))
+
+			// 	}
+
+
+
+			// 	foreach (SignalType element in unpackedType.SubtypeList)
+			// 	{
+			// 		foreach (RecordTypeDeclaration comparedType in unorganisedList)
+			// 		{
+			// 			int cnt2 = 0;
+			// 			if (element.getIdentifier() == comparedType.getIdentifier())
+			// 			{
+			// 				indexOfLowestDependency = true;
+			// 			}
+			// 			cnt2 += 1;
+			// 		}
+			// 	}
+			// 	cnt1 += 1;
+			// }
+		
 
 		StringBuilder InstantiateDUT (StringBuilder sbText)
 		{

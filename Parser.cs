@@ -36,6 +36,7 @@ namespace VHDLparser
 		List<SubtypeDeclaration> SubtypeList;
 		// There are multiple versions of type declarations each using different definition structures, therefore requiring separated classes and lists.
 		List<ArrayTypeDeclaration> ArrayTypeList;
+		public List<ArrayTypeDeclaration> ArrayType { get { return ArrayTypeList; } }
 
 		List<EnumerationTypeDeclaration> EnumerationTypeList;
 
