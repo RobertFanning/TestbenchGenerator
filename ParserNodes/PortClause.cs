@@ -38,15 +38,13 @@ namespace VHDLparser.ParserNodes
 		public List<ExtractedInterface> InterfaceList { get { return fInterfaceList; } }
 
 		public void ExtractClockReset() {
-			foreach (PortInterfaceElement element in fExpressions){
+			foreach (PortInterfaceElement element in fExpressions)
+			{
 				if (element.Name.Contains ("clock") || element.Name.Contains ("clk"))
 					fClock = element;
 				if (element.Name.Contains ("reset") || element.Name.Contains ("rst"))
 					fReset = element;
 			}
-
-			Console.WriteLine ("CLOCKCLOCKCLOCKCLOCK" + fClock.Name);
-			Console.WriteLine ("RESETRESETRESETRESET" + fReset.Name);
 		}
 
 		public void ExtractInterfaces () {
@@ -57,10 +55,9 @@ namespace VHDLparser.ParserNodes
 			string[] indentifiers = null;
 			List<string> interfaceName = new List<string> ();
 	
-			foreach (PortInterfaceElement element in fExpressions){
+			foreach (PortInterfaceElement element in fExpressions)
+			{
 				indentifiers = element.Name.Split('_');
-				Console.WriteLine(indentifiers[0]+indentifiers[1]);
-
 				interfaceName.Add (String.Concat(indentifiers[0] + '_' +indentifiers[1]));
 			}
 			//In .NET framework 3.5 and above you can use Enumerable.GroupBy which returns an enumerable of enumerables of duplicate keys, and then filter out any of the enumerables that have a Count of <=1, then select their keys to get back down to a single enumerable:

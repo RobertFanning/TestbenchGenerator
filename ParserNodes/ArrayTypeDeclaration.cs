@@ -15,8 +15,6 @@ namespace VHDLparser.ParserNodes
 		public ArrayTypeDeclaration(string identifier, int from, int to, SignalType subtype)
 		{
 			if (identifier == null) throw new ArgumentNullException("indentifier");
-			if (from == null) throw new ArgumentNullException("ArrayType_indication");
-
 			fIdentifier = identifier;
 			fFrom = from;
 			fTo = to;

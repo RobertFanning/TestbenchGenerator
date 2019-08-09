@@ -8,45 +8,40 @@ namespace VHDLparser
     {
         static void Main(string[] args)
         {
-            
-            Console.WriteLine("The current time is " + DateTime.Now);
             string contents = null;
-            foreach (string file in Directory.EnumerateFiles(@"C:\Users\rtfa\Documents\WritingAParserBlog\VHDLparser\ParserFiles\quantize\", "*.vhd"))
+
+            //Obtaining paths from the user --------------------------------------------------
+            Console.WriteLine("Please enter the folder path to the files you wish to parse:");
+            var parserFiles = @"" + Console.ReadLine();
+            Console.WriteLine("If you wish to configure the testbench please enter the path to the configuration file:");
+            var configTB = @"" + Console.ReadLine();
+            Console.WriteLine("Please enter the path of the desired output: ");
+            var TemplateOut = @"" + Console.ReadLine();
+            //--------------------------------------------------------------------------------
+            //Preprogrammed paths:
+            string TemplateIn = @"C:\Users\rtfa\Documents\Templates\tmpl_uvm_module_testbench\";
+            string InterfaceIn = @"C:\Users\rtfa\Documents\Templates\Interfaces\";
+            //--------------------------------------------------------------------------------
+
+
+            //Merging files to be parsed before initiating the parser.
+            foreach (string file in Directory.EnumerateFiles(parserFiles, "*.vhd"))
             {
                 contents += File.ReadAllText(file);
                 Console.WriteLine("Added file: " + file);
                 contents += " EndOfFileIdentifier ";
             }
-
-            string configTB = @"C:\Users\rtfa\Documents\Templates\Interfaces\config.sv";
-
-
             StringReader lSource = new StringReader(contents);
-				
-            //PARSER
             Parser lParser = new Parser(lSource);
 			ParserNode lClause = lParser.ParseNextNode();
 			while (lClause != null)
 			{
-				
    				lClause = lParser.ParseNextNode();
-                Console.WriteLine(lClause);
-                Console.WriteLine("Jockee");
-
 			}
-            
-            
-            Console.WriteLine("Accessing list item: " + lParser.Portmap.Expressions[0].Name);
-
-            string TemplateIn = @"C:\Users\rtfa\Documents\Templates\tmpl_uvm_module_testbench\";
-            string TemplateOut = @"C:\Users\rtfa\Desktop\predict_tb_generated\quantize\ROBERT\";
-            string InterfaceIn = @"C:\Users\rtfa\Documents\Templates\Interfaces\";
-
-
             TestbenchGenerator lTestbenchGenerator = new TestbenchGenerator(lParser, TemplateIn, TemplateOut, InterfaceIn, configTB);
 
 
-            Console.WriteLine("GAME OVER");
+            Console.WriteLine("Testbench files have been successfully generated.");
 
 		}
     }

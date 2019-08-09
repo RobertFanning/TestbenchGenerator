@@ -14,8 +14,6 @@
 --
 -------------------------------------------------------------------------------
 
-library PEEEENISSS;
-library PEEEENISSS;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
@@ -36,7 +34,6 @@ package quantization_p is
   -----------------------------------------------------------------------------
   type mult_cmd_t is record
     req  : std_ulogic;                             -- multiplication request
-    test : mult_rsp_t;
     idx  : table_idx_t;                            -- Table index        => multiplier operand0
     scf  : scale_factor_t;                         -- Scale factor value => multiplier operand1
     info : intea_info_t;                             -- info for loopback
@@ -65,6 +62,7 @@ package quantization_p is
   -- clear records
   function func_clr(src_i : string) return mult_cmd_t;
   function func_clr(src_i : string) return mult_rsp_t;
+  constant C_X_DECODED_ZERO : x_decoded_t := 6+-7; 
 
 end quantization_p;
 

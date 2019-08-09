@@ -364,6 +364,7 @@ namespace VHDLparser
 				ReadNextToken ();
 
 				Node result = ParseExpression ();
+				//Console.WriteLine("The result of the expression parser was:::: " + result.Eval());
 				ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, result.Eval ());
 				ConstantList.Add (ParsedConstant);
 				ReadNextToken ();
@@ -677,7 +678,7 @@ namespace VHDLparser
 		{
 			// The lefthand side of the operation is parsed with the next higher prioritized operation.
 			// Multiplication and division is a priority level above addition and subtraction.
-			var lhs = ParseMultiplyDivide ();
+			var lhs = ParseUnary ();
 			// The while loop below contiues infinitely until no more operations are to be parsed.
 			while (true) 
 			{
@@ -698,10 +699,45 @@ namespace VHDLparser
 				// The operator is skipped.
 				ReadNextToken ();
 				// Now the righthand side of the operation is parsed for the operation of the higher priority level.
-				var rhs = ParseMultiplyDivide ();
+				var rhs = ParseUnary ();
 
 				// The lefthand side value is updated with the computed operation value.
 				lhs = new NodeBinary (lhs, rhs, op);
+			}
+		}
+
+		// Unary operations are the operation with the highest priority.
+		// These must be computed before any other operations. 
+		// Unary operations are when values are first negated or made positive.
+		Node ParseUnary () 
+		{
+			
+			while (true) 
+			{
+				// If values are preceded by a '+' we do not change the value.
+				// Therefore the token is skipped and parse unary is called again.
+				if (fCurrentToken.Equals (TokenType.Symbol, "+")) 
+				{
+					ReadNextToken ();
+
+					var rhs = ParseMultiplyDivide ();
+
+					return new NodeUnary (rhs, (a) => +a);
+				}
+				// If values are preceded by a '-' we negate the value.
+				else if (fCurrentToken.Equals (TokenType.Symbol, "-")) 
+				{
+					ReadNextToken ();
+
+					var rhs = ParseMultiplyDivide ();
+
+					return new NodeUnary (rhs, (a) => -a);
+				}
+				else
+				{
+					var lhs = ParseMultiplyDivide ();
+					return lhs;
+				}		
 			}
 		}
 
@@ -739,54 +775,30 @@ namespace VHDLparser
 		// ParseExponent is of the next level of priority above ParseMultiplyDivide.
 		Node ParseExponent () 
 		{
-			var lhs = ParseUnary ();
-
-			while (true) 
+			var lhs = ParseLeaf ();
+			Func<int, int, int> op = null;
+			if (fCurrentToken.Equals (TokenType.Symbol, "**")) 
 			{
-				Func<int, int, int> op = null;
-				if (fCurrentToken.Equals (TokenType.Symbol, "**")) 
-				{
-					op = (a, b) => (int) Math.Pow (a, b);
-				}
-
-				if (op == null)
-					return lhs; 
-
-				ReadNextToken ();
-
-				var rhs = ParseUnary ();
-
-				lhs = new NodeBinary (lhs, rhs, op);
+				op = (a, b) => (int) Math.Pow (a, b);
 			}
+
+			if (op == null)
+			{
+				// At this stage we have parsed for all operations and therefore only need
+				// to extract the values to be used in these operations. This is done using
+				// ParseLeaf.
+				return lhs;
+			}
+
+			ReadNextToken ();
+
+			var rhs = ParseExponent ();
+
+			return new NodeBinary (lhs, rhs, op);
+		
 		}
 
-		// Unary operations are the operation with the highest priority.
-		// These must be computed before any other operations. 
-		// Unary operations are when values are first negated or made positive.
-		Node ParseUnary () 
-		{
-			// If values are preceded by a '+' we do not change the value.
-			// Therefore the token is skipped and parse unary is called again.
-			if (fCurrentToken.Equals (TokenType.Symbol, "+")) 
-			{
-				ReadNextToken ();
-				return ParseUnary ();
-			}
-			// If values are preceded by a '-' we negate the value.
-			if (fCurrentToken.Equals (TokenType.Symbol, "-")) 
-			{
-				ReadNextToken ();
-
-				var rhs = ParseUnary ();
-
-				return new NodeUnary (rhs, (a) => -a);
-			}
-
-			// At this stage we have parsed for all operations and therefore only need
-			// to extract the values to be used in these operations. This is done using
-			// ParseLeaf.
-			return ParseLeaf ();
-		}
+		
 
 		// ParseLeaf is the lowest level of the expression parsers.
 		// It is used to extract the fundamental elements of an expression.
@@ -945,7 +957,7 @@ namespace VHDLparser
 				}
 			}
 			// Don't Understand
-			throw new ParserException ("Expected ; and end of line");
+			throw new ParserException ("Expected ; and end of line but instead got: " + fCurrentToken.Value);
 		}
 	}
 }

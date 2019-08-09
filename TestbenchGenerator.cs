@@ -24,7 +24,8 @@ namespace VHDLparser
 			configuredInterfaces = new List<ExtractedInterface> ();
 
 			VerifyTemplates();
-			configureTB(configPath);
+			if (configPath != "")
+				configureTB(configPath);
 			GenerateBif();
 			GenerateTestbench();
 		}
@@ -77,7 +78,6 @@ namespace VHDLparser
 						}
 						foreach (ExtractedInterface configuredInterface in configuredInterfaces)
 						{
-							Console.WriteLine("Searching for interface : " + configuredInterface.Name + line);
 							implementCongfiguration(configuredInterface, line, sbText);
 						}
 					}
@@ -371,7 +371,6 @@ namespace VHDLparser
 
 		StringBuilder PortMapSpecification (StringBuilder sbText)
 		{
-			string lineBuilder = "";
 			sbText.AppendLine("    " + Source.Portmap.Clock.InputOutput +  Source.Portmap.Clock.SignalType.PortmapDefinition() + Source.Portmap.Clock.Name + ",");
 			sbText.AppendLine("    " + Source.Portmap.Reset.InputOutput +  Source.Portmap.Reset.SignalType.PortmapDefinition() + Source.Portmap.Reset.Name + ",");
 			sbText.AppendLine("");
@@ -397,10 +396,7 @@ namespace VHDLparser
 
 		StringBuilder DefineUnpackedTypes (StringBuilder sbText)
 		{
-			string lineBuilder = "";
 			List<string> alreadyDefined = new List<string> ();
-			if (Source.Portmap.UnpackedList.Any (x => x.getIdentifier() == "intea_info_t"))
-				Console.WriteLine("SUCCESSSSSS");
 			List<RecordTypeDeclaration> orderedList = Source.Portmap.UnpackedList;
 			orderedList = orderDependencies(orderedList);
 			foreach (RecordTypeDeclaration RecordType in orderedList)
@@ -462,13 +458,11 @@ namespace VHDLparser
 				{
 					RecordTypeDeclaration x = unorganisedList[i];
 					RecordTypeDeclaration y = unorganisedList[i + 1];
-					Console.WriteLine("IDENTIFIERS ARE::::" + x.getIdentifier() + y.getIdentifier());
 					if (x.SubtypeList.Any (q => q.getIdentifier() == y.getIdentifier()))
 					{
 						unorganisedList[i] = y;
 						unorganisedList[i + 1] = x;
 						stillGoing = true;
-						Console.WriteLine("HUHUHUHUHUHUHHUH");
 					}
 				}
 			}
@@ -564,6 +558,8 @@ namespace VHDLparser
 			string line = "";
 			string if_name = interfaceInstance.Name.Trim();
 			string ip = insertionPoint.Trim();
+			if (configPath == "")
+				return false;
 			using (var reader = new System.IO.StreamReader(configPath)) {
 				while ((line = reader.ReadLine()) != null) 
 				{
