@@ -13,8 +13,8 @@ namespace VHDLparser
 		//----------------------------------------------------------------------------------------
 		//                            Class Objects and Constructor
 		
-		// Tokenizer is required for the deconstruction of the input code into discrete tokens.
-		Tokenizer fTokenizer; 
+		// LexicalAnalyser is required for the deconstruction of the input code into discrete tokens.
+		LexicalAnalyser fLexicalAnalyser; 
 		// Current token created to store the current token that has been read.
 		Token fCurrentToken;
 		// lib of type MyLibrary contains the operations of all possible predefined VHDL functions.
@@ -55,7 +55,7 @@ namespace VHDLparser
 		{
 			if (source == null) throw new ArgumentNullException ("source");
 
-			fTokenizer = new Tokenizer (source);
+			fLexicalAnalyser = new LexicalAnalyser (source);
 
 			fPortmap = new PortClause(null, null);
 
@@ -82,7 +82,7 @@ namespace VHDLparser
 
 		// Reads the next token.
 		// After calling this method, fCurrentToken will contain the read token.
-		void ReadNextToken () { fCurrentToken = fTokenizer.ReadNextToken (); }
+		void ReadNextToken () { fCurrentToken = fLexicalAnalyser.ReadNextToken (); }
 
 		// If true the parser is at the end of the source.
 		bool AtEndOfSource { get { return fCurrentToken == null; } }
@@ -225,15 +225,15 @@ namespace VHDLparser
 			// The library is extracted.
 			string lLibrary = fCurrentToken.Value;
 			// The library token is skipped along with the neighbouring '.'
-			fCurrentToken = fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, "."); 
+			fCurrentToken = fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, "."); 
 			// The package is extracted.
 			string lPackage = fCurrentToken.Value;
 			// The package token is skipped along with the neighbouring '.'
-			fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, "."); 
+			fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, "."); 
 			// The "all" typically present is skipped, this may need to be adjusted.
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "all"); // skip '.'
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, "all"); // skip '.'
 
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ";"); // skip '.'
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Symbol, ";"); // skip '.'
 			// The parsed use clause is created and returned.
 			return new UseClause (lLibrary, lPackage);
 		}
@@ -248,7 +248,7 @@ namespace VHDLparser
 			// The "library" identifier is extracted.
 			string lLibrary = fCurrentToken.Value;
 			// The rest of the line is read until the end.
-			fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";"); 
+			fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ";"); 
 			// The parsed library clause is created and returned.
 			return new LibraryClause (lLibrary);
 		}
@@ -262,7 +262,7 @@ namespace VHDLparser
 			// The "library" identifier is extracted.
 			string lLibrary = fCurrentToken.Value;
 			// The rest of the line is read until the end.
-			fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";"); 
+			fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ";"); 
 			// The parsed library clause is created and returned.
 			return new LibraryClause (lLibrary);
 		}
@@ -280,16 +280,16 @@ namespace VHDLparser
 			if (fCurrentToken.Equals (TokenType.Symbol, "(")) {
 				ReadNextToken (); //Skip parenthesis since its only opening parenthesis.
 				Node left = ParseExpression ();
-				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "downto");
+				fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, "downto");
 				Node right = ParseExpression ();
 				SubtypeIndication ParsedSubtype = new SubtypeIndication (type, left.Eval(), right.Eval());
 				return ParsedSubtype;
 			}
 			//Else range Y to X
 			else {
-				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "range");
+				fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, "range");
 				Node left = ParseExpression ();
-				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "to");
+				fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, "to");
 				Node right = ParseExpression ();
 				var bitsRight = Math.Log((right.Eval()+1), 2);
 				var bitsLeft = Math.Log((left.Eval()+1), 2);
@@ -309,10 +309,10 @@ namespace VHDLparser
 			if (fCurrentToken.Type != TokenType.Word)
 				throw new ParserException ("Expected a module name.");
 
-			Variable packageName = new Variable (fCurrentToken.Value);
+			string packageName = fCurrentToken.Value;
 
 			ReadNextToken ();
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "is"); // skip 'is'
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, "is"); // skip 'is'
 
 			// PARSE GENERICS IF THERE ARE ANY
 			CheckForUnexpectedEndOfSource ();
@@ -327,9 +327,9 @@ namespace VHDLparser
 
 			// I have removed the two lines belows since sometimes the package definition will end with end package name; and othertimes just end name;
 			ReadNextToken (); // skip 'end'
-			//fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, packageName.Name); // skip end {moduleName}
+			//fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, packageName.Name); // skip end {moduleName}
 			
-			fCurrentToken = fTokenizer.SkipOver(TokenType.Word, "EndOfFileIdentifier");
+			fCurrentToken = fLexicalAnalyser.SkipOver(TokenType.Word, "EndOfFileIdentifier");
 
 			// Package has been parsed, now the next file can be parsed
 			return new PackageDeclaration (packageName);
@@ -339,7 +339,7 @@ namespace VHDLparser
 
 			string identifier = fCurrentToken.Value;
 			ReadNextToken (); //skip identifier
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":");
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Symbol, ":");
 
 			string subtypeIndication = fCurrentToken.Value;
 			ReadNextToken ();
@@ -352,7 +352,7 @@ namespace VHDLparser
 				RecordTypeDeclaration recordConstant = RecordTypeList.Find (x => x.Identifier == subtypeIndication);
 				ConstantRecordTypeList.Add (recordConstant);
 				ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, null, 0);
-				fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
+				fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ";");
 				return ParsedConstant;
 			}
 			else {
@@ -377,12 +377,12 @@ namespace VHDLparser
 			ReadNextToken (); //skip subtype
 			string identifier = fCurrentToken.Value;
 			ReadNextToken (); //skip identifier
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "is");
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, "is");
 
 			SubtypeIndication subtype = ParseSubtypeIndication ();
 
 			//Read until end of line
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ";");
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Symbol, ";");
 
 			SubtypeDeclaration ParsedSubtype = new SubtypeDeclaration (identifier, subtype);
 			SubtypeList.Add (ParsedSubtype);
@@ -396,18 +396,18 @@ namespace VHDLparser
 			SignalType fType;
 
 			string identifier = fCurrentToken.Value;
-			fCurrentToken = fTokenizer.SkipOver (TokenType.Word, "is");
+			fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Word, "is");
 
 			if (fCurrentToken.Equals (TokenType.Word, "array")) {
-				fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, "(");
+				fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, "(");
 				Node from = ParseExpression ();
 				//Used to have skip over "to" here but it can also be "downto"
 				ReadNextToken ();
 			    Node to = ParseExpression ();
-				fCurrentToken = fTokenizer.SkipOver (TokenType.Word, "of");
+				fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Word, "of");
 				string subtypeIndication = fCurrentToken.Value;
 				fType = FindDefinedType ();
-				fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
+				fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ";");
 
 				ArrayTypeDeclaration ParsedArrayType = new ArrayTypeDeclaration (identifier, from.Eval(), to.Eval(), fType);
 				ArrayTypeList.Add (ParsedArrayType);
@@ -422,14 +422,14 @@ namespace VHDLparser
 
 				while (!fCurrentToken.Equals (TokenType.Word, "end")) {
 					identifierList.Add (fCurrentToken.Value);
-					fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ":");
+					fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ":");
 					//Searches for the type of each record entry.
 					fType = FindDefinedType (); 
 					subtypeIndicationList.Add (fType);
-					fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
+					fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ";");
 				}
 				//Skip Over: end record;
-				fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
+				fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ";");
 
 				
 
@@ -439,7 +439,7 @@ namespace VHDLparser
 			} else {
 
 				List<string> enumerationList = new List<string> ();
-				fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, "(");
+				fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, "(");
 
 				while (!fCurrentToken.Equals (TokenType.Symbol, ";")) {
 					enumerationList.Add (fCurrentToken.Value);
@@ -461,7 +461,7 @@ namespace VHDLparser
 
 			Token lName = fCurrentToken;
 			ReadNextToken (); //Skip the function name
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, "(");
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Symbol, "(");
 
 			//Waiting for the bracket to be closed again.
 			//This is because function declarations can contain ';'.
@@ -501,7 +501,7 @@ namespace VHDLparser
 			entityName = moduleName;
 
 			ReadNextToken ();
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "is"); // skip 'is'
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, "is"); // skip 'is'
 
 			// PARSE GENERICS IF THERE ARE ANY
 			List<ParserNode> lParserNodes = new List<ParserNode> ();
@@ -515,13 +515,13 @@ namespace VHDLparser
 			
 			// I have removed the two lines belows since sometimes the entity definition will end with end entity name; and othertimes just end name;
 			//ReadNextToken (); // skip 'end'
-			//fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, moduleName); // skip end {moduleName}
-			fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ";");
+			//fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, moduleName); // skip end {moduleName}
+			fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ";");
 
 			// Package has been parsed, now the next file can be parsed
-			fCurrentToken = fTokenizer.SkipOver(TokenType.Word, "EndOfFileIdentifier");
+			fCurrentToken = fLexicalAnalyser.SkipOver(TokenType.Word, "EndOfFileIdentifier");
 
-			return new EntityDeclaration (moduleName, new ParserNodeCollection (lParserNodes));
+			return new EntityDeclaration (moduleName, lParserNodes);
 		}
 
 		GenericClause ParseGenericClause () {
@@ -534,13 +534,12 @@ namespace VHDLparser
 				if ((lInterfaceElement = ParseGenericInterfaceElement ()) != null)
 				{
 					lInterfaceElements.Add (lInterfaceElement);
-					fCurrentToken = fTokenizer.SkipIfPresent(TokenType.Symbol, ";");
+					fCurrentToken = fLexicalAnalyser.SkipIfPresent(TokenType.Symbol, ";");
 				}
 				else throw new ParserException ("Unexpected end of source.");
 			}
-			InterfaceList GenericList = new InterfaceList (lInterfaceElements);
 
-			return new GenericClause (GenericList);
+			return new GenericClause (lInterfaceElements);
 		}
 
 		GenericInterfaceElement ParseGenericInterfaceElement () 
@@ -548,7 +547,7 @@ namespace VHDLparser
 
 			string genericName = fCurrentToken.Value;
 			ReadNextToken ();
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":");
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Symbol, ":");
 
 			string type = fCurrentToken.Value;
 
@@ -558,7 +557,7 @@ namespace VHDLparser
 			{
 				ReadNextToken();
 				Node left = ParseExpression ();
-				fCurrentToken = fTokenizer.SkipExpected (TokenType.Word, "to");
+				fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, "to");
 				Node right = ParseExpression ();
 				var bitsRight = Math.Log((right.Eval()+1), 2);
 				var bitsLeft = Math.Log((left.Eval()+1), 2);
@@ -618,7 +617,7 @@ namespace VHDLparser
 			
 			signalName = fCurrentToken.Value;
 			ReadNextToken ();
-			fCurrentToken = fTokenizer.SkipExpected (TokenType.Symbol, ":");
+			fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Symbol, ":");
 			inOut = fCurrentToken.Value;
 			ReadNextToken ();
 			type = fCurrentToken.Value;
@@ -663,7 +662,7 @@ namespace VHDLparser
 			var expr = ParseAddSubtract ();
 			// The closing parenthesis is skipped if it is present at the end of an expression.
 			// This may occur in instances such as an array of expression. 
-			fCurrentToken = fTokenizer.SkipIfPresent (TokenType.Symbol, ")");
+			fCurrentToken = fLexicalAnalyser.SkipIfPresent (TokenType.Symbol, ")");
 			// Check if the entire expression until the end of line or a reserved word has been parsed
 			// Expressions may be separated either by a line termination or a reserved word.
 			if (!(fCurrentToken.Equals (TokenType.Symbol, ";") || ReservedWords.IsReservedWord (fCurrentToken.Value)))
@@ -827,9 +826,9 @@ namespace VHDLparser
 				// Check for "others" statement that is commonly used in VHDL.
 				if (fCurrentToken.Equals (TokenType.Word, "others")) 
 				{
-					fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, "'");
+					fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, "'");
 					var node = new NodeNumber (fCurrentToken.IntValue ());
-					fCurrentToken = fTokenizer.SkipOver (TokenType.Symbol, ")");
+					fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ")");
 					return node;
 				} 
 				// Else we have an expression inside of parenthesis. 
