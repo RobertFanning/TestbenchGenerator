@@ -6,7 +6,7 @@ The first phase interprets the DUT's specification, extracting all relevant info
 
 The second phase then generates a testbench complying with the DUT's specification by utilising the information extracted during the interpretation phase. The generation phase requires a template of the UVM testbench on which to base generations. These template files are provided in the Template folder. 
 
-## Getting Started
+## Files
 
 This repository specifies the complete description of the Testbench Generator. The main files contained within this repository are:
 
