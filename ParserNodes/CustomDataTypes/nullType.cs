@@ -12,12 +12,10 @@ namespace VHDLparser.ParserNodes
 		}
 		public override string getIdentifier()
         {
-            // Just return it.  Too easy.
             return "nullType";
         }
 		public override string getType()
         {
-            // Just return it.  Too easy.
             return "nullType";
         }
 
@@ -33,13 +31,11 @@ namespace VHDLparser.ParserNodes
 
 		public override Boolean isUnpacked()
         {
-            // Just return it.  Too easy.
             return false;
         }
 
 		public override SignalType getSignalType()
         {
-            // Just return it.  Too easy.
             throw new ParserException ("Error: Attempting to obtain signal type from enumeration signal. Enumeration signals have no subtype.");
         }
 

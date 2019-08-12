@@ -29,43 +29,36 @@ namespace VHDLparser.ParserNodes
 
         public override string getIdentifier()
         {
-            // Just return it.  Too easy.
             return fIdentifier;
         }
 
 		public override string getType()
         {
-            // Just return it.  Too easy.
             return "RecordType";
         }
 
 		public override int getLeft()
         {
-            // Just return it.  Too easy.
             return 0;
         }
 
 		public override int getRight()
         {
-            // Just return it.  Too easy.
             return 0;
         }
 
         public override SignalType getSignalType()
         {
-            // Just return it.  Too easy.
             throw new ParserException ("Error: Attempting to obtain signal type from enumeration signal. Enumeration signals have no subtype.");
         }
 
 		public override Boolean isUnpacked()
         {
-            // Just return it.  Too easy.
             return true;
         }
 
 		public override string PortmapDefinition()
         {
-            // Just return it.  Too easy.
             return ("  " + Identifier + "  ");
         }
 	}

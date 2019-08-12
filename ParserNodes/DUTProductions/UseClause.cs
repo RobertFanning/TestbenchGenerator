@@ -5,7 +5,7 @@ using System.Text;
 
 namespace VHDLparser.ParserNodes
 {
-	/// <summary>Represents an if-Clause.</summary>
+	
 	public class UseClause : Clause
 	{
 		public UseClause(string library, string package)

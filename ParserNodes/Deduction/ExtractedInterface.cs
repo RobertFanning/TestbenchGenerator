@@ -5,7 +5,6 @@ using System.Text;
 
 namespace VHDLparser.ParserNodes
 {
-	/// <summary>Represents a for-loop.</summary>
 	public class ExtractedInterface : Clause
 	{
 		public ExtractedInterface(string name, string InterfaceType, List<PortInterfaceElement> portExpressions, PortInterfaceElement dataSig, PortInterfaceElement ready, PortInterfaceElement metadata, PortInterfaceElement acknowledge, Boolean Array)

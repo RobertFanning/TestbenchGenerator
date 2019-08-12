@@ -4,7 +4,7 @@ using System.Text;
 
 namespace VHDLparser.ParserNodes
 {
-	/// <summary>Represents a for-loop.</summary>
+	
 	public class PackageDeclaration : Declaration
 	{
 		public PackageDeclaration(string moduleName)
@@ -16,8 +16,6 @@ namespace VHDLparser.ParserNodes
 		}
 
 		readonly string fVariable;
-		/// <summary>Gets the variable that is incremented each iteration.</summary>
-		/// <value>The variable that is incremented each iteration.</value>
 		public string Variable { get { return fVariable; } }
 
 	}

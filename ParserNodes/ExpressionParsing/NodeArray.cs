@@ -16,7 +16,7 @@ namespace VHDLparser.ParserNodes
 
         public override int Eval()
         {
-            // Just return it.  Too easy.
+    
             return fArrayElements.Length;
         }
     }

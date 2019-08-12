@@ -5,7 +5,6 @@ using System.Text;
 
 namespace VHDLparser.ParserNodes
 {
-	/// <summary>Represents a for-loop.</summary>
 	public class PortClause : Clause
 	{
 		public PortClause(List<PortInterfaceElement> portExpressions,List<RecordTypeDeclaration> Unpacked)

@@ -29,19 +29,16 @@ namespace VHDLparser.ParserNodes
 
 		public override string getIdentifier()
         {
-            // Just return it.  Too easy.
             return fIdentifier;
         }
 
 		public override string getType()
         {
-            // Just return it.  Too easy.
             return "Subtype";
         }
 
 		public override int getLeft()
         {
-            // Just return it.  Too easy.
             if (Left > Right)
 				return Left;
 			else 
@@ -50,7 +47,6 @@ namespace VHDLparser.ParserNodes
 
 		public override int getRight()
         {
-            // Just return it.  Too easy.
             if (Left > Right)
 				return Right;
 			else 
@@ -59,13 +55,11 @@ namespace VHDLparser.ParserNodes
 
 		public override Boolean isUnpacked()
         {
-            // Just return it.  Too easy.
             return false;
         }
 
 		public override SignalType getSignalType()
         {
-            // Just return it.  Too easy.
             return fSubtype;
         }
 

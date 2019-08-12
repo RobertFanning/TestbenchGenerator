@@ -4,7 +4,6 @@ using System.Text;
 
 namespace VHDLparser.ParserNodes
 {
-	/// <summary>Represents a function call.</summary>
 	public class GenericInterfaceElement : InterfaceElement
 	{
 
@@ -20,18 +19,12 @@ namespace VHDLparser.ParserNodes
 		}
 
 		readonly string fName;
-		/// <summary>Gets the name of the function to call.</summary>
-		/// <value>The name of the function to call.</value>
 		public string Name { get { return fName; } }
 
 		readonly int fValue;
-		/// <summary>Gets the name of the function to call.</summary>
-		/// <value>The name of the function to call.</value>
 		public int Value { get { return fValue; } }
 
 		readonly string fType;
-		/// <summary>Gets the name of the function to call.</summary>
-		/// <value>The name of the function to call.</value>
 		public string Type { get { return fType; } }
 	
 	}

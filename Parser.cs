@@ -327,7 +327,6 @@ namespace VHDLparser
 
 			// I have removed the two lines belows since sometimes the package definition will end with end package name; and othertimes just end name;
 			ReadNextToken (); // skip 'end'
-			//fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, packageName.Name); // skip end {moduleName}
 			
 			fCurrentToken = fLexicalAnalyser.SkipOver(TokenType.Word, "EndOfFileIdentifier");
 
@@ -364,7 +363,6 @@ namespace VHDLparser
 				ReadNextToken ();
 
 				Node result = ParseExpression ();
-				//Console.WriteLine("The result of the expression parser was:::: " + result.Eval());
 				ConstantDeclaration ParsedConstant = new ConstantDeclaration (identifier, subtypeIndication, result.Eval ());
 				ConstantList.Add (ParsedConstant);
 				ReadNextToken ();
@@ -455,7 +453,6 @@ namespace VHDLparser
 			}
 		}
 
-		// NEED TO FIX
 		UseClause ParseFunctionDeclaration () {
 			ReadNextToken (); //skip function
 
@@ -480,16 +477,6 @@ namespace VHDLparser
 
 		EntityDeclaration ParseEntityDeclaration () {
 
-			// entity-Clause:
-			//		entity {name} is 
-			//      	generic(
-			//             {gen_name}  : {type} := {value}
-			//          );
-			//		    port (
-			//	           {variable}	: {in/out} {type};
-			//          );
-			//          end {name};
-
 			ReadNextToken (); // skip 'entity'
 			CheckForUnexpectedEndOfSource ();
 
@@ -512,10 +499,7 @@ namespace VHDLparser
 					lParserNodes.Add (lParserNode);
 				else throw new ParserException ("Unexpected end of source.");
 			}
-			
-			// I have removed the two lines belows since sometimes the entity definition will end with end entity name; and othertimes just end name;
-			//ReadNextToken (); // skip 'end'
-			//fCurrentToken = fLexicalAnalyser.SkipExpected (TokenType.Word, moduleName); // skip end {moduleName}
+		
 			fCurrentToken = fLexicalAnalyser.SkipOver (TokenType.Symbol, ";");
 
 			// Package has been parsed, now the next file can be parsed
